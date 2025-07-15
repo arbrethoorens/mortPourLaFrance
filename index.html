@@ -1,0 +1,2910 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" >
+<title>Tableau interactif avec recherche sans JS externe</title>
+<style>
+    :root {
+      --borderColor: #aaa;
+      --textColor: #000;
+      --toolTipTextColor: #fff;
+      --toolTipBckgColor: #333;
+      --mainColumnWidth: 65%;
+      --mainFont: Verdana, sans-serif;
+      --fontSize: 16px;
+      --radius: 4px;
+      --space: 6px;
+      --toolTipFontSize: 0.9em;
+      --transition: 0.3s ease;
+      --transformScale: scale(1.006);
+	  --responsiveFirstColumnWidth: 50;
+	  --responsiveScondColumnWidth: calc(100 - var(--responsiveFirstColumnWidth));
+    }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html{
+      width: auto;
+    }
+    body {
+      font-family: var(--mainFont);
+      font-size: var(--fontSize);
+      margin: 20px;
+      width: auto;
+      color: var(--textColor)
+    }
+    label {
+      display:block;
+      margin-bottom: 10px;
+    }
+    input#searchInput {
+      margin-bottom: 15px;
+      font-size: var(--fontSize);
+      width: 300px;
+      padding: var(--space) calc(var(--space) * 1.5);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      user-select:none;
+    }
+    th,
+    td {
+      border: 1px solid #aaa;
+      padding: 8px;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    tr[tabindex]:hover td,
+    tr[tabindex]:focus td  {
+      border: 0px solid transparent;
+    }
+    th:nth-child(3) {
+      width: 43%;
+    }
+    th:nth-child(4) {
+      width: 19%;
+    }
+    tr[tabindex] {
+      transform-origin: center;
+      transition: transform var(--transition);
+    }
+  @media screen and (max-width: 800px) {
+    input#searchInput{
+      width:100%;
+    }
+    th:nth-child(3) {
+      width: calc(1% * var(--responsiveFirstColumnWidth));
+    }
+    th:nth-child(4) {
+      width: calc(1% * var(--responsiveScondColumnWidth));
+    }
+    th:nth-child(n+5),
+    td:nth-child(n+5) {
+      display: none;
+      width:0%;
+    }
+    tr[tabindex]:hover,
+    tr[tabindex]:focus{
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      width: calc(1% * (10000 / var(--responsiveFirstColumnWidth)));
+    }
+    tr[tabindex]:hover td,
+    tr[tabindex]:focus td  {
+      border: 0px solid transparent;
+    }
+    tr[tabindex]:hover td:nth-child(n+5),
+    tr[tabindex]:focus td:nth-child(n+5) {
+      display: grid;
+      width:auto;
+      color: #fff;
+      background-color: #ccc;
+    }
+    tr[tabindex]:focus td:nth-child(5) {
+      border-bottom-right-radius: 0 var(--radius);
+    }
+    tr[tabindex]:hover td:nth-child(5)::before,
+    tr[tabindex]:focus td:nth-child(5)::before {
+      content: "Cause de la mort :";
+      padding-bottom: 4px;
+      font-weight: bold;
+    }
+    tr[tabindex]:hover td:nth-child(6)::before,
+    tr[tabindex]:focus td:nth-child(6)::before {
+      content: "Conflit :";
+      font-weight: bold;
+      padding-bottom: 4px;
+    }
+  }
+</style>
+</head>
+<body>
+  <label for="searchInput">Rechercher par Nom</label>
+  <input aria-label="Recherche dans le tableau" id="searchInput" placeholder="Recherche..." type="text" />
+  <div id="tableContainer">
+  <table id="tableMorts">
+    <thead>
+      <tr>
+        <th style="display:none">RawPrenom</th>
+        <th style="display:none">RawNom</th>
+        <th>Nom</th>
+        <th>Prénom</th>
+        <th>Cause de la mort</th>
+        <th>Conflit</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=gabriel%2Bange%2Bmarie%2Bjoseph%2Banne&n=d%2Baboville&oc=0'">
+        <td style="display:none">d_aboville</td>
+        <td style="display:none">gabriel_ange_marie_joseph_anne</td>
+        <td>Aboville (d')</td>
+        <td>Ange-Marie</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bgabriel%2Bjoseph%2Bbernard&n=d%2Baboville&oc=0'">
+        <td style="display:none">d_aboville</td>
+        <td style="display:none">marie_gabriel_joseph_bernard</td>
+        <td>Aboville (d')</td>
+        <td>Bernard</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bmarie%2Bxavier&n=d%2Baboville&oc=0'">
+        <td style="display:none">d_aboville</td>
+        <td style="display:none">jean_marie_xavier</td>
+        <td>Aboville (d')</td>
+        <td>Jean</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=xavier%2Bmartin%2Bmarie%2Bstanislas&n=d%2Baboville&oc=0'">
+        <td style="display:none">d_aboville</td>
+        <td style="display:none">xavier_martin_marie_stanislas</td>
+        <td>Aboville (d')</td>
+        <td>Xavier</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bmarie%2Bemmanuel%2Btheophile&n=d%2Babzac&oc=0'">
+        <td style="display:none">d_abzac</td>
+        <td style="display:none">jean_marie_emmanuel_theophile</td>
+        <td>Abzac (d')</td>
+        <td>Jean</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jacques%2Bedouard%2Bmarie%2Blouis&n=amyot%2Bd%2Binville&oc=0'">
+        <td style="display:none">amyot_d_inville</td>
+        <td style="display:none">jacques_edouard_marie_louis</td>
+        <td>Amyot d'Inville</td>
+        <td>Jacques</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bjean&n=amyot%2Bd%2Binville&oc=0'">
+        <td style="display:none">amyot_d_inville</td>
+        <td style="display:none">marie_jean</td>
+        <td>Amyot d'Inville</td>
+        <td>Jean</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jacques&n=archer&oc=1'">
+        <td style="display:none">archer</td>
+        <td style="display:none">jacques</td>
+        <td>Archer</td>
+        <td>Jacques</td>
+        <td>disparu au combat</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=albert%2Bmarie%2Bjoseph&n=arnoulx%2Bde%2Bpirey&oc=0'">
+        <td style="display:none">arnoulx_de_pirey</td>
+        <td style="display:none">albert_marie_joseph</td>
+        <td>Arnoulx de Pirey</td>
+        <td>Albert</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=alfred%2Bmarie&n=arnoulx%2Bde%2Bpirey&oc=0'">
+        <td style="display:none">arnoulx_de_pirey</td>
+        <td style="display:none">alfred_marie</td>
+        <td>Arnoulx de Pirey</td>
+        <td>Alfred</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=leopold%2Bphilibert%2Bmarie%2Bphilippe&n=arnoulx%2Bde%2Bpirey&oc=0'">
+        <td style="display:none">arnoulx_de_pirey</td>
+        <td style="display:none">leopold_philibert_marie_philippe</td>
+        <td>Arnoulx de Pirey</td>
+        <td>Léopold</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=antoine%2Bvalentin%2Broger&n=arnoux%2Bde%2Bmaison%2Brouge&oc=0'">
+        <td style="display:none">arnoux_de_maison_rouge</td>
+        <td style="display:none">antoine_valentin_roger</td>
+        <td>Arnoux de Maison Rouge</td>
+        <td>Antoine</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=gilbert%2Bmarie%2Bjoseph%2Brene%2Bhenri%2Bantoine&n=arnoux%2Bde%2Bmaison%2Brouge&oc=0'">
+        <td style="display:none">arnoux_de_maison_rouge</td>
+        <td style="display:none">gilbert_marie_joseph_rene_henri_antoine</td>
+        <td>Arnoux de Maison Rouge</td>
+        <td>Gilbert</td>
+        <td>en combat aérien</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=frederic%2Bmarie%2Bmarcel&n=d%2Barras&oc=0'">
+        <td style="display:none">d_arras</td>
+        <td style="display:none">frederic_marie_marcel</td>
+        <td>Arras (d')</td>
+        <td>Frédéric</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bmarie&n=d%2Barras&oc=0'">
+        <td style="display:none">d_arras</td>
+        <td style="display:none">jean_marie</td>
+        <td>Arras (d')</td>
+        <td>Jean</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=maurice%2Bmarie&n=d%2Barras&oc=0'">
+        <td style="display:none">d_arras</td>
+        <td style="display:none">maurice_marie</td>
+        <td>Arras (d')</td>
+        <td>Maurice</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bmarie&n=aubert&oc=2'">
+        <td style="display:none">aubert</td>
+        <td style="display:none">jean_marie</td>
+        <td>Aubert</td>
+        <td>Jean</td>
+        <td>disparu en mer</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henri%2Bcharles%2Bmarie%2Bjoseph&n=d%2Baviau%2Bde%2Bternay&oc=0'">
+        <td style="display:none">d_aviau_de_ternay</td>
+        <td style="display:none">henri_charles_marie_joseph</td>
+        <td>Aviau de Ternay (d')</td>
+        <td>Henri</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Bcharles%2Bmarie%2Bjoseph&n=d%2Baviau%2Bde%2Bternay&oc=0'">
+        <td style="display:none">d_aviau_de_ternay</td>
+        <td style="display:none">louis_charles_marie_joseph</td>
+        <td>Aviau de Ternay (d')</td>
+        <td>Louis</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bjoseph%2Bhenri&n=de%2Bbazelaire%2Bde%2Bruppierre&oc=0'">
+        <td style="display:none">de_bazelaire_de_ruppierre</td>
+        <td style="display:none">marie_joseph_henri</td>
+        <td>Bazelaire de Ruppierre (de)</td>
+        <td>Henri</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=charles+guillaume&n=barbeau&oc=0'">
+        <td style="display:none">barbeau</td>
+        <td style="display:none">charles_guillaume</td>
+        <td>Barbeau</td>
+        <td>Charles</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bjoseph%2Brobert&n=de%2Bbazelaire%2Bde%2Bruppierre&oc=0'">
+        <td style="display:none">de_bazelaire_de_ruppierre</td>
+        <td style="display:none">marie_joseph_robert</td>
+        <td>Bazelaire de Ruppierre (de)</td>
+        <td>Robert</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Baugustin%2Bfrancois&n=benard&oc=0'">
+        <td style="display:none">benard</td>
+        <td style="display:none">jean_augustin_francois</td>
+        <td>Bénard</td>
+        <td>Jean</td>
+        <td>disparu au combat</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bcharles%2Betienne%2Broger&n=bernard%2Bde%2Blavernette&oc=0'">
+        <td style="display:none">bernard_de_lavernette</td>
+        <td style="display:none">marie_charles_etienne_roger</td>
+        <td>Bernard de Lavernette</td>
+        <td>Charles</td>
+        <td>disparu au combat</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=vincent%2Bthomas%2Bmarie&n=beven&oc=0'">
+        <td style="display:none">beven</td>
+        <td style="display:none">vincent_thomas_marie</td>
+        <td>Beven</td>
+        <td>Vincent</td>
+        <td>des suites de maladie contractée en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=joseph&n=bideau&oc=0'">
+        <td style="display:none">bideau</td>
+        <td style="display:none">joseph</td>
+        <td>Bideau</td>
+        <td>Joseph</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bjoseph%2Bgaston&n=blanquet%2Bde%2Brouville&oc=0'">
+        <td style="display:none">blanquet_de_rouville</td>
+        <td style="display:none">marie_joseph_gaston</td>
+        <td>Blanquet de Rouville</td>
+        <td>Gaston</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=georges%2Bmarie%2Bjoseph&n=blanquet%2Bde%2Brouville&oc=0'">
+        <td style="display:none">blanquet_de_rouville</td>
+        <td style="display:none">georges_marie_joseph</td>
+        <td>Blanquet de Rouville</td>
+        <td>Georges</td>
+        <td>en congé</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jacques%2Bmarie%2Bjoseph&n=blanquet%2Bde%2Brouville&oc=0'">
+        <td style="display:none">blanquet_de_rouville</td>
+        <td style="display:none">jacques_marie_joseph</td>
+        <td>Blanquet de Rouville</td>
+        <td>Jacques</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=edouard%2Bherve%2Bmarie&n=de%2Bblic&oc=0'">
+        <td style="display:none">de_blic</td>
+        <td style="display:none">edouard_herve_marie</td>
+        <td>Blic (de)</td>
+        <td>Edouard</td>
+        <td>disparu en mer</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bmarie%2Bphilippe&n=de%2Bblic&oc=0'">
+        <td style="display:none">de_blic</td>
+        <td style="display:none">jean_marie_philippe</td>
+        <td>Blic (de)</td>
+        <td>Philippe</td>
+        <td>disparu au combat</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=dominique%2Bmarie%2Brene&n=de%2Bblic&oc=0'">
+        <td style="display:none">de_blic</td>
+        <td style="display:none">dominique_marie_rene</td>
+        <td>Blic (de)</td>
+        <td>René</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=diego%2Blouis%2Bmarie%2Bjoseph&n=de%2Bbodard%2Bde%2Bla%2Bjacopiere&oc=0'">
+        <td style="display:none">de_bodard_de_la_jacopiere</td>
+        <td style="display:none">diego_louis_marie_joseph</td>
+        <td>Bodard de La Jacopière (de)</td>
+        <td>Diégo</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Bgeorges%2Bmarie%2Bjoseph&n=de%2Bbodard%2Bde%2Bla%2Bjacopiere&oc=0'">
+        <td style="display:none">de_bodard_de_la_jacopiere</td>
+        <td style="display:none">louis_georges_marie_joseph</td>
+        <td>Bodard de La Jacopière (de)</td>
+        <td>Louis</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=gonzague%2Bjean%2Bcharles&n=de%2Bbodman&oc=0'">
+        <td style="display:none">de_bodman</td>
+        <td style="display:none">gonzague_jean_charles</td>
+        <td>Bodman (de)</td>
+        <td>Gonzague</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=camille%2Bpaul%2Bmarie%2Bjoseph&n=boguais%2Bde%2Bla%2Bboissiere&oc=0'">
+        <td style="display:none">boguais_de_la_boissiere</td>
+        <td style="display:none">camille_paul_marie_joseph</td>
+        <td>Boguais de La Boissière</td>
+        <td>Camille</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=charles%2Bmaurice%2Bmarie%2Bjoseph&n=boguais%2Bde%2Bla%2Bboissiere&oc=0'">
+        <td style="display:none">boguais_de_la_boissiere</td>
+        <td style="display:none">charles_maurice_marie_joseph</td>
+        <td>Boguais de La Boissière</td>
+        <td>Charles</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Bbernard%2Bmarie%2Bstephane&n=bonjean&oc=0'">
+        <td style="display:none">bonjean</td>
+        <td style="display:none">louis_bernard_marie_stephane</td>
+        <td>Bonjean</td>
+        <td>Louis</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=andre%2Bjean%2Bedouard&n=bonnafont&oc=0'">
+        <td style="display:none">bonnafont</td>
+        <td style="display:none">andre_jean_edouard</td>
+        <td>Bonnafont</td>
+        <td>André</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=georges%2Beugene%2Blouis&n=bonnafont&oc=0'">
+        <td style="display:none">bonnafont</td>
+        <td style="display:none">georges_eugene_louis</td>
+        <td>Bonnafont</td>
+        <td>Georges</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jacques%2Bjoseph%2Bhenri&n=bonnafont&oc=0'">
+        <td style="display:none">bonnafont</td>
+        <td style="display:none">jacques_joseph_henri</td>
+        <td>Bonnafont</td>
+        <td>Jacques</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=guy%2Bjoseph%2Bmarie%2Bpaul&n=bonnin%2Bde%2Bla%2Bbonniniere%2Bde%2Bbeaumont&oc=0'">
+        <td style="display:none">bonnin_de_la_bonniniere_de_beaumont</td>
+        <td style="display:none">guy_joseph_marie_paul</td>
+        <td>Bonnin de La Bonninière de Beaumont</td>
+        <td>Guy</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=eugene%2Bauguste&n=bourlier&oc=0'">
+        <td style="display:none">bourlier</td>
+        <td style="display:none">eugene_auguste</td>
+        <td>Bourlier</td>
+        <td>Eugène</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bjoseph%2Bhenri%2Bpierre&n=de%2Bbrauer&oc=0'">
+        <td style="display:none">de_brauer</td>
+        <td style="display:none">marie_joseph_henri_pierre</td>
+        <td>Brauer (de)</td>
+        <td>Pierre</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=arthur%2Bcharles%2Braymond&n=brongniart&oc=0'">
+        <td style="display:none">brongniart</td>
+        <td style="display:none">arthur_charles_raymond</td>
+        <td>Brongniart</td>
+        <td>Arthur</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henri%2Bmarie%2Bgeoffroy&n=breart%2Bde%2Bboisanger&oc=0'">
+        <td style="display:none">breart_de_boisanger</td>
+        <td style="display:none">henri_marie_geoffroy</td>
+        <td>Bréart de Boisanger</td>
+        <td>Henri</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=alain%2Bfrancois%2Bgilles%2Bmarie&n=du%2Bbreil%2Bde%2Bpontbriand&oc=0'">
+        <td style="display:none">du_breil_de_pontbriand</td>
+        <td style="display:none">alain_francois_gilles_marie</td>
+        <td>Breil de Pontbriand</td>
+        <td>Alain</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=pierre%2Bignace%2Bmarie%2Bjoseph&n=de%2Bcacqueray%2Bvalmenier&oc=0'">
+        <td style="display:none">de_cacqueray_valmenier</td>
+        <td style="display:none">pierre_ignace_marie_joseph</td>
+        <td>Cacqueray-Valménier (de)</td>
+        <td>Pierre</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=augustin%2Bjean%2Bmarie%2Bbarthelemy&n=de%2Bcambourg&oc=0'">
+        <td style="display:none">de_cambourg</td>
+        <td style="display:none">augustin_jean_marie_barthelemy</td>
+        <td>Cambourg (de)</td>
+        <td>Auguste</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=etienne%2Blouis%2Bmarie&n=cario&oc=0'">
+        <td style="display:none">cario</td>
+        <td style="display:none">etienne_louis_marie</td>
+        <td>Cario</td>
+        <td>Etienne</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Bandre&n=cario&oc=2'">
+        <td style="display:none">cario</td>
+        <td style="display:none">louis_andre</td>
+        <td>Cario</td>
+        <td>Louis</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Bjoachim&n=cario&oc=0'">
+        <td style="display:none">cario</td>
+        <td style="display:none">louis_joachim</td>
+        <td>Cario</td>
+        <td>Louis</td>
+        <td>disparu au combat</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bjoseph%2Bgaspard%2Bfrancois%2Bxavier&n=de%2Bcharette%2Bde%2Bla%2Bcontrie&oc=0'">
+        <td style="display:none">de_charette_de_la_contrie</td>
+        <td style="display:none">marie_joseph_gaspard_francois_xavier</td>
+        <td>Charette de La Contrie (de)</td>
+        <td>François-Xavier</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=maxence%2Bmarie%2Blouis%2Bhenri%2Bemmanuel&n=de%2Bcharette%2Bde%2Bla%2Bcontrie&oc=0'">
+        <td style="display:none">de_charette_de_la_contrie</td>
+        <td style="display:none">maxence_marie_louis_henri_emmanuel</td>
+        <td>Charette de La Contrie (de)</td>
+        <td>Maxence</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=rene%2Bcharles&n=chaumeil&oc=0'">
+        <td style="display:none">chaumeil</td>
+        <td style="display:none">rene_charles</td>
+        <td>Chaumeil</td>
+        <td>René</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bandre%2Bmarie%2Bjoseph&n=de%2Bchorivit%2Bde%2Bsagardiburu&oc=0'">
+        <td style="display:none">de_chorivit_de_sagardiburu</td>
+        <td style="display:none">jean_andre_marie_joseph</td>
+        <td>Chorivit de Sagardiburu (de)</td>
+        <td>Jean</td>
+        <td>disparu au combat</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=robert%2Bemmanuel%2Bmarie%2Bdominique&n=de%2Bclercq&oc=0'">
+        <td style="display:none">de_clercq</td>
+        <td style="display:none">robert_emmanuel_marie_dominique</td>
+        <td>Clercq (de)</td>
+        <td>Robert</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=max%2Bhenri%2Balfred%2Bantoine&n=clicquot%2Bde%2Bmentque&oc=0'">
+        <td style="display:none">clicquot_de_mentque</td>
+        <td style="display:none">max_henri_alfred_antoine</td>
+        <td>Clicquot de Mentque</td>
+        <td>Max</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henri%2Badrien%2Bvivant&n=copin%2Bde%2Bmiribel&oc=0'">
+        <td style="display:none">copin_de_miribel</td>
+        <td style="display:none">henri_adrien_vivant</td>
+        <td>Copin de Miribel</td>
+        <td>Adrien</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=alfred%2Bcharles%2Blouis&n=de%2Bcornulier%2Bluciniere&oc=0'">
+        <td style="display:none">de_cornulier_luciniere</td>
+        <td style="display:none">alfred_charles_louis</td>
+        <td>Cornulier-Lucinière (de)</td>
+        <td>Alfred</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Bmarie%2Bauguste%2Bandre&n=courlet%2Bde%2Bvregille&oc=0'">
+        <td style="display:none">courlet_de_vregille</td>
+        <td style="display:none">louis_marie_auguste_andre</td>
+        <td>Courlet de Vregille</td>
+        <td>André</td>
+        <td>des suites de maladie contractée en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=bernard%2Bmarie%2Barmand&n=courlet%2Bde%2Bvregille&oc=0'">
+        <td style="display:none">courlet_de_vregille</td>
+        <td style="display:none">bernard_marie_armand</td>
+        <td>Courlet de Vregille</td>
+        <td>Bernard</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=pierre%2Bmarie%2Bjacques&n=courlet%2Bde%2Bvregille&oc=0'">
+        <td style="display:none">courlet_de_vregille</td>
+        <td style="display:none">pierre_marie_jacques</td>
+        <td>Courlet de Vregille</td>
+        <td>Jacques</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bjoseph%2Bxavier%2Bbernard&n=de%2Bcrousnilhon&oc=0'">
+        <td style="display:none">de_crousnilhon</td>
+        <td style="display:none">marie_joseph_xavier_bernard</td>
+        <td>Crousnilhon (de)</td>
+        <td>Bernard</td>
+        <td>des suites de maladie contractée en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bmarie&n=de%2Bcrousnilhon&oc=0'">
+        <td style="display:none">de_crousnilhon</td>
+        <td style="display:none">jean_marie</td>
+        <td>Crousnilhon (de)</td>
+        <td>Jean</td>
+        <td>des suites de maladie contractée en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=andre%2Brene&n=cugnet%2Brichard&oc=0'">
+        <td style="display:none">cugnet_richard</td>
+        <td style="display:none">andre_rene</td>
+        <td>Cugnet-Richard</td>
+        <td>André</td>
+        <td>des suites de maladie contractée en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bfrancois%2Bconstantin%2Bmaxime&n=de%2Bcrevoisier%2Bde%2Bvomecourt&oc=0'">
+        <td style="display:none">de_crevoisier_de_vomecourt</td>
+        <td style="display:none">jean_francois_constantin_maxime</td>
+        <td>Crevoisier de Vomécourt (de)</td>
+        <td>Maxime</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bfrancois%2Bjoseph%2Bgerald&n=de%2Bcurieres%2Bde%2Bcastelnau&oc=0'">
+        <td style="display:none">de_curieres_de_castelnau</td>
+        <td style="display:none">marie_francois_joseph_gerald</td>
+        <td>Curières de Castelnau (de)</td>
+        <td>Gérald</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bjoseph%2Bfrancois%2Bhugues&n=de%2Bcurieres%2Bde%2Bcastelnau&oc=0'">
+        <td style="display:none">de_curieres_de_castelnau</td>
+        <td style="display:none">marie_joseph_francois_hugues</td>
+        <td>Curières de Castelnau (de)</td>
+        <td>Hugues</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=joseph%2Bmarie%2Bhenri%2Bfrancois%2Bxavier&n=de%2Bcurieres%2Bde%2Bcastelnau&oc=0'">
+        <td style="display:none">de_curieres_de_castelnau</td>
+        <td style="display:none">joseph_marie_henri_francois_xavier</td>
+        <td>Curières de Castelnau (de)</td>
+        <td>Xavier</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=antoine%2Bhenry&n=de%2Bdampierre&oc=0'">
+        <td style="display:none">de_dampierre</td>
+        <td style="display:none">antoine_henry</td>
+        <td>Dampierre (de)</td>
+        <td>Antoine</td>
+        <td>des suites de maladie contractée en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=vincent%2Bfortune&n=danet&oc=0'">
+        <td style="display:none">danet</td>
+        <td style="display:none">vincent_fortune</td>
+        <td>Danet</td>
+        <td>Vincent</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=ernest%2Bmarie%2Bcharles&n=de%2Bdartein&oc=0'">
+        <td style="display:none">de_dartein</td>
+        <td style="display:none">ernest_marie_charles</td>
+        <td>Dartein (de)</td>
+        <td>Charles</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=laurent%2Bemile%2Bhector&n=delhaye&oc=0'">
+        <td style="display:none">delhaye</td>
+        <td style="display:none">laurent_emile_hector</td>
+        <td>Delhaye</td>
+        <td>Laurent</td>
+        <td>en captivité</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henri%2Bmartial%2Bpierre&n=delpit&oc=0'">
+        <td style="display:none">delpit</td>
+        <td style="display:none">henri_martial_pierre</td>
+        <td>Delpit</td>
+        <td>Henri</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=andre%2Bjacques&n=delpit&oc=0'">
+        <td style="display:none">delpit</td>
+        <td style="display:none">andre_jacques</td>
+        <td>Delpit</td>
+        <td>Jacques</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Bmartial%2Bpierre&n=delpit&oc=0'">
+        <td style="display:none">delpit</td>
+        <td style="display:none">louis_martial_pierre</td>
+        <td>Delpit</td>
+        <td>Martial</td>
+        <td>disparu au combat</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=georges%2Balexandre&n=derosiere&oc=0'">
+        <td style="display:none">derosiere</td>
+        <td style="display:none">georges_alexandre</td>
+        <td>Derosière</td>
+        <td>Georges</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=rene%2Bemile&n=derosiere&oc=0'">
+        <td style="display:none">derosiere</td>
+        <td style="display:none">rene_emile</td>
+        <td>Derosière</td>
+        <td>René</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=armand%2Bhenri%2Bfrancois%2Bjoseph&n=desfriches%2Bdoria&oc=0'">
+        <td style="display:none">desfriches_doria</td>
+        <td style="display:none">armand_henri_francois_joseph</td>
+        <td>Desfriches Doria</td>
+        <td>Armand</td>
+        <td>des suites de maladie contractée en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henri&n=detrie&oc=0'">
+        <td style="display:none">detrie</td>
+        <td style="display:none">henri</td>
+        <td>Détrie</td>
+        <td>Henri</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=georges%2Braoul&n=devouges&oc=0'">
+        <td style="display:none">devouges</td>
+        <td style="display:none">georges_raoul</td>
+        <td>Devouges</td>
+        <td>Raoul</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=eugene%2Bjules&n=drujon&oc=0'">
+        <td style="display:none">drujon</td>
+        <td style="display:none">eugene_jules</td>
+        <td>Drujon</td>
+        <td>Eugène</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=roger%2Bjean%2Bcharles&n=dufilhol&oc=0'">
+        <td style="display:none">dufilhol</td>
+        <td style="display:none">roger_jean_charles</td>
+        <td>Dufilhol</td>
+        <td>Roger</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bjean%2Bguy&n=dupont%2Bde%2Bdinechin&oc=0'">
+        <td style="display:none">dupont_de_dinechin</td>
+        <td style="display:none">marie_jean_guy</td>
+        <td>Dupont de Dinechin</td>
+        <td>Guy</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=philippe%2Bodon%2Bmarie%2Bjean&n=dupont%2Bde%2Bdinechin&oc=0'">
+        <td style="display:none">dupont_de_dinechin</td>
+        <td style="display:none">philippe_odon_marie_jean</td>
+        <td>Dupont de Dinechin</td>
+        <td>Jean</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bedouard%2Blouis&n=dupont%2Bde%2Bdinechin&oc=0'">
+        <td style="display:none">dupont_de_dinechin</td>
+        <td style="display:none">marie_edouard_louis</td>
+        <td>Dupont de Dinechin</td>
+        <td>Louis</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=camille%2Bmarie%2Bjean%2Bludovic&n=dupont%2Bde%2Bdinechin&oc=0'">
+        <td style="display:none">dupont_de_dinechin</td>
+        <td style="display:none">camille_marie_jean_ludovic</td>
+        <td>Dupont de Dinechin</td>
+        <td>Ludovic</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=benoit%2Bbertrand%2Bmarie%2Bgermain&n=d%2Belbee&oc=0'">
+        <td style="display:none">d_elbee</td>
+        <td style="display:none">benoit_bertrand_marie_germain</td>
+        <td>Elbée (d')</td>
+        <td>Bertrand</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=raphael%2Beugene%2Bmarie%2Bfrancois&n=d%2Belbee&oc=0'">
+        <td style="display:none">d_elbee</td>
+        <td style="display:none">raphael_eugene_marie_francois</td>
+        <td>Elbée (d')</td>
+        <td>François</td>
+        <td>disparu au combat</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bcamille%2Blouis%2Bgonzague&n=d%2Belbee&oc=0'">
+        <td style="display:none">d_elbee</td>
+        <td style="display:none">marie_camille_louis_gonzague</td>
+        <td>Elbée (d')</td>
+        <td>Gonzague</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=joseph%2Baudoin%2Bmaurice&n=d%2Belbee&oc=0'">
+        <td style="display:none">d_elbee</td>
+        <td style="display:none">joseph_audoin_maurice</td>
+        <td>Elbée (d')</td>
+        <td>Maurice</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=philippe%2Bmarie%2Bemile%2Baugustin%2Bmaurice&n=d%2Belbee&oc=0'">
+        <td style="display:none">d_elbee</td>
+        <td style="display:none">philippe_marie_emile_augustin_maurice</td>
+        <td>Elbée (d')</td>
+        <td>Philippe</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=odon%2Bmarie%2Bguillaume&n=de%2Bfaubournet%2Bde%2Bmontferrand&oc=0'">
+        <td style="display:none">de_faubournet_de_montferrand</td>
+        <td style="display:none">odon_marie_guillaume</td>
+        <td>Faubournet de Montferrand (de)</td>
+        <td>Guillaume</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bgeorges%2Baugustin%2Bjoseph&n=de%2Bfaubournet%2Bde%2Bmontferrand&oc=0'">
+        <td style="display:none">de_faubournet_de_montferrand</td>
+        <td style="display:none">jean_georges_augustin_joseph</td>
+        <td>Faubournet de Montferrand (de)</td>
+        <td>Jean</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bfrancois&n=fauche&oc=0'">
+        <td style="display:none">fauche</td>
+        <td style="display:none">jean_francois</td>
+        <td>Fauché</td>
+        <td>Jean</td>
+        <td>disparu en mer</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=rene%2Bange%2Bmarie&n=fauche&oc=0'">
+        <td style="display:none">fauche</td>
+        <td style="display:none">rene_ange_marie</td>
+        <td>Fauché</td>
+        <td>René</td>
+        <td>disparu en mer</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=ivan&n=fleuriot%2Bde%2Blangle&oc=0'">
+        <td style="display:none">fleuriot_de_langle</td>
+        <td style="display:none">ivan</td>
+        <td>Fleuriot de Langle</td>
+        <td>Ivan</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=alfred%2Bfrancois%2Bmarie%2Blouis&n=franchet%2Bd%2Besperey&oc=0'">
+        <td style="display:none">franchet_d_esperey</td>
+        <td style="display:none">alfred_francois_marie_louis</td>
+        <td>Franchet d'Esperey</td>
+        <td>François</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Bfrancois%2Bmarie%2Bjoseph&n=franchet%2Bd%2Besperey&oc=0'">
+        <td style="display:none">franchet_d_esperey</td>
+        <td style="display:none">louis_francois_marie_joseph</td>
+        <td>Franchet d'Esperey</td>
+        <td>Louis</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=arsene%2Blouis&n=gachet&oc=0'">
+        <td style="display:none">gachet</td>
+        <td style="display:none">arsene_louis</td>
+        <td>Gachet</td>
+        <td>Arsène</td>
+        <td>disparu en mer</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=joseph%2Bmarie&n=georges&oc=3'">
+        <td style="display:none">georges</td>
+        <td style="display:none">joseph_marie</td>
+        <td>Georges</td>
+        <td>Joseph</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Bmarie%2Bhenri%2Barmand&n=de%2Bghaisne%2Bde%2Bbourmont&oc=0'">
+        <td style="display:none">de_ghaisne_de_bourmont</td>
+        <td style="display:none">louis_marie_henri_armand</td>
+        <td>Ghaisne de Bourmont (de)</td>
+        <td>Armand</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Blouis%2Baugustin%2Bcharles%2Bcarle&n=de%2Bghaisne%2Bde%2Bbourmont&oc=0'">
+        <td style="display:none">de_ghaisne_de_bourmont</td>
+        <td style="display:none">jean_louis_augustin_charles_carle</td>
+        <td>Ghaisne de Bourmont (de)</td>
+        <td>Carle</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Blouis%2Bguy&n=de%2Bghaisne%2Bde%2Bbourmont&oc=0'">
+        <td style="display:none">de_ghaisne_de_bourmont</td>
+        <td style="display:none">jean_louis_guy</td>
+        <td>Ghaisne de Bourmont (de)</td>
+        <td>Guy</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=charles%2Blouis%2Brene%2Bhenri&n=de%2Bghaisne%2Bde%2Bbourmont&oc=0'">
+        <td style="display:none">de_ghaisne_de_bourmont</td>
+        <td style="display:none">charles_louis_rene_henri</td>
+        <td>Ghaisne de Bourmont (de)</td>
+        <td>René</td>
+        <td>accidentellement en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=georges%2Bandre&n=gosselin&oc=0'">
+        <td style="display:none">gosselin</td>
+        <td style="display:none">georges_andre</td>
+        <td>Gosselin</td>
+        <td>Georges</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=lucien%2Blouis%2Bcharles&n=gosselin&oc=0'">
+        <td style="display:none">gosselin</td>
+        <td style="display:none">lucien_louis_charles</td>
+        <td>Gosselin</td>
+        <td>Lucien</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=amaury%2Barthur%2Banne%2Bmarie%2Bjules&n=de%2Bgouvello&oc=0'">
+        <td style="display:none">de_gouvello</td>
+        <td style="display:none">amaury_arthur_anne_marie_jules</td>
+        <td>Gouvello (de)</td>
+        <td>Amaury</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=francois%2Blouis%2Bexupere&n=de%2Bgouvello&oc=0'">
+        <td style="display:none">de_gouvello</td>
+        <td style="display:none">francois_louis_exupere</td>
+        <td>Gouvello (de)</td>
+        <td>François</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=gilles%2Bcharles%2Bjoseph%2Bfrancois%2Banne&n=de%2Bgouvello&oc=0'">
+        <td style="display:none">de_gouvello</td>
+        <td style="display:none">gilles_charles_joseph_francois_anne</td>
+        <td>Gouvello (de)</td>
+        <td>Gilles</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=georges&n=de%2Bgouvello%2Bde%2Bkeriaval&oc=0'">
+        <td style="display:none">de_gouvello_de_keriaval</td>
+        <td style="display:none">georges</td>
+        <td>Gouvello de Keriaval (de)</td>
+        <td>Georges</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=joseph%2Bfrancis%2Bbenoit%2Bjacques&n=de%2Bguigne&oc=0'">
+        <td style="display:none">de_guigne</td>
+        <td style="display:none">joseph_francis_benoit_jacques</td>
+        <td>Guigné (de)</td>
+        <td>Jacques</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=alexandre%2Bmarie&n=guy&oc=0'">
+        <td style="display:none">guy</td>
+        <td style="display:none">alexandre_marie</td>
+        <td>Guy</td>
+        <td>Alexandre</td>
+        <td>des suites de maladie contractée en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=bernard%2Bfrancois%2Bmarie&n=de%2Bhauteclocque&oc=0'">
+        <td style="display:none">de_hauteclocque</td>
+        <td style="display:none">bernard_francois_marie</td>
+        <td>Hauteclocque (de)</td>
+        <td>Bernard</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henri%2Bmarie%2Bfrancois%2Bxavier&n=de%2Bhauteclocque&oc=0'">
+        <td style="display:none">de_hauteclocque</td>
+        <td style="display:none">henri_marie_francois_xavier</td>
+        <td>Hauteclocque (de)</td>
+        <td>Henri</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=wallerand%2Bmarie%2Balfred&n=de%2Bhauteclocque&oc=0'">
+        <td style="display:none">de_hauteclocque</td>
+        <td style="display:none">wallerand_marie_alfred</td>
+        <td>Hauteclocque (de)</td>
+        <td>Wallerand</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=andre%2Bjoseph&n=l%2Bhotte&oc=0'">
+        <td style="display:none">l_hotte</td>
+        <td style="display:none">andre_joseph</td>
+        <td>Hotte (L')</td>
+        <td>André</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henry%2Bphilippe%2Bmarie&n=d%2Bhumieres&oc=0'">
+        <td style="display:none">d_humieres</td>
+        <td style="display:none">henry_philippe_marie</td>
+        <td>Humières (d')</td>
+        <td>Henry</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=robert%2Bmarie%2Baymeric%2Beugene&n=d%2Bhumieres&oc=0'">
+        <td style="display:none">d_humieres</td>
+        <td style="display:none">robert_marie_aymeric_eugene</td>
+        <td>Humières (d')</td>
+        <td>Robert</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Blouis&n=jacob&oc=1'">
+        <td style="display:none">jacob</td>
+        <td style="display:none">jean_louis</td>
+        <td>Jacob</td>
+        <td>Jean</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bpatern&n=jacob&oc=0'">
+        <td style="display:none">jacob</td>
+        <td style="display:none">jean_patern</td>
+        <td>Jacob</td>
+        <td>Jean</td>
+        <td>des suites de maladie contractée en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=bernard%2Bmarie%2Banne%2Bmarguerite%2Bguillaume&n=de%2Bjouffroy%2Bgonsans&oc=0'">
+        <td style="display:none">de_jouffroy_gonsans</td>
+        <td style="display:none">bernard_marie_anne_marguerite_guillaume</td>
+        <td>Jouffroy-Gonsans (de)</td>
+        <td>Bernard</td>
+        <td>disparu au combat</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=pierre%2Bhenri&n=jouvet%2Bdes%2Bmarands&oc=0'">
+        <td style="display:none">jouvet_des_marands</td>
+        <td style="display:none">pierre_henri</td>
+        <td>Jouvet des Marands</td>
+        <td>Henri</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Bhenri%2Bmarie&n=de%2Bkerautem&oc=0'">
+        <td style="display:none">de_kerautem</td>
+        <td style="display:none">louis_henri_marie</td>
+        <td>Kerautem (de)</td>
+        <td>Louis</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=amaury%2Bgeorges%2Bmarie%2Bjoseph&n=de%2Bkermel&oc=0'">
+        <td style="display:none">de_kermel</td>
+        <td style="display:none">amaury_georges_marie_joseph</td>
+        <td>Kermel (de)</td>
+        <td>Amaury</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jacques%2Bhenri%2Bmarie&n=de%2Bkermel&oc=0'">
+        <td style="display:none">de_kermel</td>
+        <td style="display:none">jacques_henri_marie</td>
+        <td>Kermel (de)</td>
+        <td>Jacques</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Bmarie%2Bjoseph&n=de%2Bkermel&oc=0'">
+        <td style="display:none">de_kermel</td>
+        <td style="display:none">louis_marie_joseph</td>
+        <td>Kermel (de)</td>
+        <td>Louis</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=alfred%2Bmarie&n=de%2Blaage%2Bde%2Bmeux&oc=0'">
+        <td style="display:none">de_laage_de_meux</td>
+        <td style="display:none">alfred_marie</td>
+        <td>Laage de Meux (de)</td>
+        <td>Alfred</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jehan%2Bgeorges%2Bmarie&n=de%2Blaage%2Bde%2Bmeux&oc=0'">
+        <td style="display:none">de_laage_de_meux</td>
+        <td style="display:none">jehan_georges_marie</td>
+        <td>Laage de Meux (de)</td>
+        <td>Jehan</td>
+        <td>disparu au combat</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bjoseph&n=de%2Blaage%2Bde%2Bmeux&oc=0'">
+        <td style="display:none">de_laage_de_meux</td>
+        <td style="display:none">marie_joseph</td>
+        <td>Laage de Meux (de)</td>
+        <td>Joseph</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=charles%2Bmarie%2Bmaurice&n=de%2Bla%2Bcroix%2Bde%2Bcastries&oc=0'">
+        <td style="display:none">de_la_croix_de_castries</td>
+        <td style="display:none">charles_marie_maurice</td>
+        <td>La Croix de Castries (de)</td>
+        <td>Maurice</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=eugene%2Bmarie%2Bjoseph&n=de%2Bla%2Bgorgue%2Bde%2Brosny&oc=0'">
+        <td style="display:none">de_la_gorgue_de_rosny</td>
+        <td style="display:none">eugene_marie_joseph</td>
+        <td>La Gorgue de Rosny (de)</td>
+        <td>Eugène</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bjoseph%2Bpaul%2Bjacques&n=lajoumard%2Bde%2Bbellabre&oc=0'">
+        <td style="display:none">lajoumard_de_bellabre</td>
+        <td style="display:none">marie_joseph_paul_jacques</td>
+        <td>Lajoumard de Bellabre</td>
+        <td>Jacques</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=joseph%2Bmarie%2Bcharles&n=de%2Bla%2Blande%2Bde%2Bcalan&oc=0'">
+        <td style="display:none">de_la_lande_de_calan</td>
+        <td style="display:none">joseph_marie_charles</td>
+        <td>La Lande de Calan (de)</td>
+        <td>Joseph</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=rene%2Bpaul%2Blouis%2Bmarie%2Bjoseph&n=de%2Bla%2Blande%2Bde%2Bcalan&oc=0'">
+        <td style="display:none">de_la_lande_de_calan</td>
+        <td style="display:none">rene_paul_louis_marie_joseph</td>
+        <td>La Lande de Calan (de)</td>
+        <td>René</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henri%2Bolivier%2Byves%2Bcharles%2Bmarie&n=de%2Bla%2Bpoeze&oc=0'">
+        <td style="display:none">de_la_poeze</td>
+        <td style="display:none">henri_olivier_yves_charles_marie</td>
+        <td>La Poëze (de)</td>
+        <td>Henri</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=fernand%2Bclement%2Badalbert&n=de%2Blaparre%2Bde%2Bsaint%2Bsernin&oc=0'">
+        <td style="display:none">de_laparre_de_saint_sernin</td>
+        <td style="display:none">fernand_clement_adalbert</td>
+        <td>Laparre de Saint-Sernin (de)</td>
+        <td>Fernand</td>
+        <td>des suites de maladie contractée en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bmarie%2Btheophile&n=de%2Blaparre%2Bde%2Bsaint%2Bsernin&oc=0'">
+        <td style="display:none">de_laparre_de_saint_sernin</td>
+        <td style="display:none">jean_marie_theophile</td>
+        <td>Laparre de Saint-Sernin (de)</td>
+        <td>Jean</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=andre%2Bmarie%2Broger&n=de%2Blarminat&oc=0'">
+        <td style="display:none">de_larminat</td>
+        <td style="display:none">andre_marie_roger</td>
+        <td>Larminat (de)</td>
+        <td>André</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=bernard%2Bmarie&n=de%2Blarminat&oc=0'">
+        <td style="display:none">de_larminat</td>
+        <td style="display:none">bernard_marie</td>
+        <td>Larminat (de)</td>
+        <td>Bernard</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=paul%2Bmarie%2Balexandre&n=de%2Blarminat&oc=0'">
+        <td style="display:none">de_larminat</td>
+        <td style="display:none">paul_marie_alexandre</td>
+        <td>Larminat (de)</td>
+        <td>Paul</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bjoseph%2Bfelix&n=le%2Bboucher%2Bd%2Bherouville&oc=0'">
+        <td style="display:none">le_boucher_d_herouville</td>
+        <td style="display:none">marie_joseph_felix</td>
+        <td> Le Boucher d'Hérouville</td>
+        <td>Félix</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bjoseph%2Bfelix%2Bhenry&n=le%2Bboucher%2Bd%2Bherouville&oc=0'">
+        <td style="display:none">le_boucher_d_herouville</td>
+        <td style="display:none">marie_joseph_felix_henry</td>
+        <td>Le Boucher d'Hérouville</td>
+        <td>Henry</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bgustave%2Bpaul%2Braoul&n=le%2Bboucher%2Bd%2Bherouville&oc=0'">
+        <td style="display:none">le_boucher_d_herouville</td>
+        <td style="display:none">marie_gustave_paul_raoul</td>
+        <td>Le Boucher d'Hérouville</td>
+        <td>Raoul</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=georges%2Bpascal%2Bmarie&n=le%2Bdiabat&oc=0'">
+        <td style="display:none">le_diabat</td>
+        <td style="display:none">georges_pascal_marie</td>
+        <td>Le Diabat</td>
+        <td>Georges</td>
+        <td>accidentellement en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=theodore%2Bhenry&n=le%2Bdiabat&oc=0'">
+        <td style="display:none">le_diabat</td>
+        <td style="display:none">theodore_henry</td>
+        <td>Le Diabat</td>
+        <td>Théodore</td>
+        <td>disparu en mer</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=joseph%2Bmarie&n=le%2Bdivellec&oc=1'">
+        <td style="display:none">le_divellec</td>
+        <td style="display:none">joseph_marie</td>
+        <td>Le Divellec</td>
+        <td>Joseph</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marcellus&n=le%2Bmarec&oc=2'">
+        <td style="display:none">le_marec</td>
+        <td style="display:none">marcellus</td>
+        <td>Le Marec</td>
+        <td>Marcellus</td>
+        <td>disparu en mer</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=rene%2Bmarie%2Baristide&n=le%2Bmonies%2Bde%2Bsagazan&oc=0'">
+        <td style="display:none">le_monies_de_sagazan</td>
+        <td style="display:none">rene_marie_aristide</td>
+        <td>Le Moniès de Sagazan</td>
+        <td>René</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bhenri&n=le%2Btrionnaire&oc=0'">
+        <td style="display:none">le_trionnaire</td>
+        <td style="display:none">jean_henri</td>
+        <td>Le Trionnaire</td>
+        <td>Jean</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=norbert%2Bvincent%2Bmarie&n=le%2Bvigouroux&oc=0'">
+        <td style="display:none">le_vigouroux</td>
+        <td style="display:none">norbert_vincent_marie</td>
+        <td>Le Vigouroux</td>
+        <td>Norbert</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jules%2Bmarie%2Bedgard&n=lejeune&oc=0'">
+        <td style="display:none">lejeune</td>
+        <td style="display:none">jules_marie_edgard</td>
+        <td>Lejeune</td>
+        <td>Edgard</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=alfred%2Bfrancois%2Bmarie&n=lemut&oc=0'">
+        <td style="display:none">lemut</td>
+        <td style="display:none">alfred_francois_marie</td>
+        <td>Lemut</td>
+        <td>Alfred</td>
+        <td>en combat aérien</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Balexis%2Bmarie&n=de%2Blespinay&oc=0'">
+        <td style="display:none">de_lespinay</td>
+        <td style="display:none">jean_alexis_marie</td>
+        <td>Lespinay (de)</td>
+        <td>Jean</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=pierre%2Bcharles%2Bmarie&n=de%2Blesquen%2Bdu%2Bplessis%2Bcasso&oc=0'">
+        <td style="display:none">de_lesquen_du_plessis_casso</td>
+        <td style="display:none">pierre_charles_marie</td>
+        <td>Lesquen du Plessis-Casso (de)</td>
+        <td>Pierre</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=rene%2Braphael%2Bmarie&n=de%2Blesquen%2Bdu%2Bplessis%2Bcasso&oc=0'">
+        <td style="display:none">de_lesquen_du_plessis_casso</td>
+        <td style="display:none">rene_raphael_marie</td>
+        <td>Lesquen du Plessis-Casso (de)</td>
+        <td>René</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=bernard%2Bmarie&n=de%2Blille%2Bde%2Bloture&oc=0'">
+        <td style="display:none">de_lille_de_loture</td>
+        <td style="display:none">bernard_marie</td>
+        <td>Lille de Loture (de)</td>
+        <td>Bernard</td>
+        <td>disparu au combat</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=pierre%2Bfrancois%2Bmarie&n=lodeho&oc=0'">
+        <td style="display:none">lodeho</td>
+        <td style="display:none">pierre_francois_marie</td>
+        <td>Lodého</td>
+        <td>Pierre</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=joseph%2Bmarie%2Bferdinand&n=lorho&oc=0'">
+        <td style="display:none">lorho</td>
+        <td style="display:none">joseph_marie_ferdinand</td>
+        <td>Lorho</td>
+        <td>Joseph</td>
+        <td>disparu en mer</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bbaptiste&n=luco&oc=0'">
+        <td style="display:none">luco</td>
+        <td style="display:none">jean_baptiste</td>
+        <td>Luco</td>
+        <td>Jean</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marc%2Blucien%2Bmarie%2Bfrancois&n=malcor&oc=0'">
+        <td style="display:none">malcor</td>
+        <td style="display:none">marc_lucien_marie_francois</td>
+        <td>Malcor</td>
+        <td>Marc</td>
+        <td>accidentellement en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=francois%2Bleon%2Bghislain%2Bmarie%2Bjoseph&n=marette%2Bde%2Blagarenne&oc=0'">
+        <td style="display:none">marette_de_lagarenne</td>
+        <td style="display:none">francois_leon_ghislain_marie_joseph</td>
+        <td>Marette de Lagarenne</td>
+        <td>François</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Bmarie&n=martin&oc=0'">
+        <td style="display:none">martin</td>
+        <td style="display:none">louis_marie</td>
+        <td>Martin</td>
+        <td>Louis</td>
+        <td>disparu en mer</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=pierre%2Bpaul&n=martin%2Bsaint%2Bleon&oc=0'">
+        <td style="display:none">martin_saint_leon</td>
+        <td style="display:none">pierre_paul</td>
+        <td>Martin Saint-Léon</td>
+        <td>Pierre</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henri%2Bmarie%2Balfred&n=de%2Bmons&oc=0'">
+        <td style="display:none">de_mons</td>
+        <td style="display:none">henri_marie_alfred</td>
+        <td>Mons (de)</td>
+        <td>Henri</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henri%2Bmarie%2Blouis%2Bjean&n=de%2Bmons&oc=0'">
+        <td style="display:none">de_mons</td>
+        <td style="display:none">henri_marie_louis_jean</td>
+        <td>Mons (de)</td>
+        <td>Henri</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bjoseph%2Bpierre&n=de%2Bmons&oc=0'">
+        <td style="display:none">de_mons</td>
+        <td style="display:none">marie_joseph_pierre</td>
+        <td>Mons (de)</td>
+        <td>Pierre</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=alexis%2Bmarie%2Balphonse%2Bandre&n=montrelay&oc=0'">
+        <td style="display:none">montrelay</td>
+        <td style="display:none">alexis_marie_alphonse_andre</td>
+        <td>Montrelay</td>
+        <td>Alexis</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Bmarie%2Bjoachim%2Bnapoleon%2Bmichel&n=murat&oc=0'">
+        <td style="display:none">murat</td>
+        <td style="display:none">louis_marie_joachim_napoleon_michel</td>
+        <td>Murat</td>
+        <td>Louis</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=amedee%2Bjean%2Bmarie&n=ogier%2Bde%2Bbaulny&oc=0'">
+        <td style="display:none">ogier_de_baulny</td>
+        <td style="display:none">amedee_jean_marie</td>
+        <td>Ogier de Baulny</td>
+        <td>Jean</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=charles%2Bfrancois%2Bmarie&n=ogier%2Bde%2Bbaulny&oc=0'">
+        <td style="display:none">ogier_de_baulny</td>
+        <td style="display:none">charles_francois_marie</td>
+        <td>Ogier de Baulny</td>
+        <td>Charles</td>
+        <td>tué à  l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=pierre%2Bemile&n=pages&oc=0'">
+        <td style="display:none">pages</td>
+        <td style="display:none">pierre_emile</td>
+        <td>Pagès</td>
+        <td>Pierre</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bolivier%2Bmarie%2Bjacques&n=palluat%2Bde%2Bbesset&oc=0'">
+        <td style="display:none">palluat_de_besset</td>
+        <td style="display:none">jean_olivier_marie_jacques</td>
+        <td>Palluat de Besset</td>
+        <td>Jacques</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=herve%2Bfrancois%2Bjoseph%2Bmarie%2Braymond&n=de%2Bparscau%2Bdu%2Bplessix&oc=0'">
+        <td style="display:none">de_parscau_du_plessix</td>
+        <td style="display:none">herve_francois_joseph_marie_raymond</td>
+        <td>Parscau du Plessix (de)</td>
+        <td>Hervé</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=olivier%2Bjean%2Bfrancois%2Bmarie&n=de%2Bparscau%2Bdu%2Bplessix&oc=0'">
+        <td style="display:none">de_parscau_du_plessix</td>
+        <td style="display:none">olivier_jean_francois_marie</td>
+        <td>Parscau du Plessix (de)</td>
+        <td>Olivier</td>
+        <td>disparu au combat</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=roland%2Bleopold%2Bstanislas&n=payen%2Bde%2Bla%2Bgaranderie&oc=0'">
+        <td style="display:none">payen_de_la_garanderie</td>
+        <td style="display:none">roland_leopold_stanislas</td>
+        <td>Payen de La Garanderie</td>
+        <td>Roland</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=eugene%2Bjoseph&n=pelletier&oc=0'">
+        <td style="display:none">pelletier</td>
+        <td style="display:none">eugene_joseph</td>
+        <td>Pelletier</td>
+        <td>Eugène</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=alfred%2Bmarie%2Bjoseph&n=du%2Bplessis%2Bmauron%2Bde%2Bgrenedan&oc=0'">
+        <td style="display:none">du_plessis_mauron_de_grenedan</td>
+        <td style="display:none">alfred_marie_joseph</td>
+        <td>Plessis-Mauron de Grenédan (du)</td>
+        <td>Alfred</td>
+        <td>disparu au combat</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=raoul%2Bguy%2Balexandre&n=du%2Bplessis%2Bmauron%2Bde%2Bgrenedan&oc=0'">
+        <td style="display:none">du_plessis_mauron_de_grenedan</td>
+        <td style="display:none">raoul_guy_alexandre</td>
+        <td>Plessis-Mauron de Grenédan (du)</td>
+        <td>Raoul</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=maurice%2Bmarie%2Broger&n=de%2Bpoulpiquet%2Bdu%2Bhalgouet&oc=0'">
+        <td style="display:none">de_poulpiquet_du_halgouet</td>
+        <td style="display:none">maurice_marie_roger</td>
+        <td>Poulpiquet du Halgouët (de)</td>
+        <td>Maurice</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=yves%2Bmarie%2Bcharles&n=de%2Bpoulpiquet%2Bdu%2Bhalgouet&oc=0'">
+        <td style="display:none">de_poulpiquet_du_halgouet</td>
+        <td style="display:none">yves_marie_charles</td>
+        <td>Poulpiquet du Halgouët (de)</td>
+        <td>Yves</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=raoul%2Bpaul%2Bmarie&n=prado&oc=0'">
+        <td style="display:none">prado</td>
+        <td style="display:none">raoul_paul_marie</td>
+        <td>Prado</td>
+        <td>Raoul</td>
+        <td>disparu en mer</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=alfred%2Bmaximin&n=prevost&oc=0'">
+        <td style="display:none">prevost</td>
+        <td style="display:none">alfred_maximin</td>
+        <td>Prévost</td>
+        <td>Alfred</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=hyacinthe%2Bmarie%2Bxavier%2Bedouard&n=de%2Bquatrebarbes&oc=0'">
+        <td style="display:none">de_quatrebarbes</td>
+        <td style="display:none">hyacinthe_marie_xavier_edouard</td>
+        <td>Quatrebarbes (de)</td>
+        <td>Hyacinthe</td>
+        <td>des suites de maladie contractée en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bhenri%2Bxavier%2Bbernard&n=de%2Bquatrebarbes&oc=0'">
+        <td style="display:none">de_quatrebarbes</td>
+        <td style="display:none">marie_henri_xavier_bernard</td>
+        <td>Quatrebarbes (de)</td>
+        <td>Xavier</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=raymond%2Bpaul&n=quillet&oc=0'">
+        <td style="display:none">quillet</td>
+        <td style="display:none">raymond_paul</td>
+        <td>Quillet</td>
+        <td>Raymond</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=theodore%2Bemile&n=quillet&oc=0'">
+        <td style="display:none">quillet</td>
+        <td style="display:none">theodore_emile</td>
+        <td>Quillet</td>
+        <td>Théodore</td>
+        <td>disparu au combat</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=fleury%2Bthomas&n=rau&oc=0'">
+        <td style="display:none">rau</td>
+        <td style="display:none">fleury_thomas</td>
+        <td>Rau</td>
+        <td>Thomas</td>
+        <td>disparu en mer</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=robert%2Bmarie%2Blouis%2Betienne&n=de%2Braulin%2Bde%2Bgueutteville%2Bde%2Breal%2Bcamp&oc=0'">
+        <td style="display:none">de_raulin_de_gueutteville_de_real_camp</td>
+        <td style="display:none">robert_marie_louis_etienne</td>
+        <td>Raulin de Gueutteville de Réal-Camp (de)</td>
+        <td>Robert</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bmarie%2Bjoseph%2Bhyacinthe&n=du%2Breau%2Bde%2Bla%2Bgaignonniere&oc=0'">
+        <td style="display:none">du_reau_de_la_gaignonniere</td>
+        <td style="display:none">jean_marie_joseph_hyacinthe</td>
+        <td>Réau de La Gaignonnière (du)</td>
+        <td>Jean</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=joseph%2Bmarie%2Bhenri%2Blouis&n=du%2Breau%2Bde%2Bla%2Bgaignonniere&oc=0'">
+        <td style="display:none">du_reau_de_la_gaignonniere</td>
+        <td style="display:none">joseph_marie_henri_louis</td>
+        <td>Réau de La Gaignonnière (du)</td>
+        <td>Joseph</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=maurice%2Bmarie%2Bhenri&n=du%2Breau%2Bde%2Bla%2Bgaignonniere&oc=0'">
+        <td style="display:none">du_reau_de_la_gaignonniere</td>
+        <td style="display:none">maurice_marie_henri</td>
+        <td>Réau de La Gaignonnière (du)</td>
+        <td>Maurice</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bzacharie%2Bgeorges&n=du%2Breau%2Bde%2Bla%2Bgaignonniere&oc=0'">
+        <td style="display:none">du_reau_de_la_gaignonniere</td>
+        <td style="display:none">marie_zacharie_georges</td>
+        <td>Réau de La Gaignonnière (du)</td>
+        <td>Zacharie</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=max%2Bjules%2Baugustin%2Bren%C3%A9%2Bbenoit%2Bjoseph%2Bmarie&n=regnouf%2Bde%2Bvains&oc=0'">
+        <td style="display:none">regnouf_de_vains</td>
+        <td style="display:none">max_jules_augustin_rené_benoit_joseph_marie</td>
+        <td>Regnouf de Vains</td>
+        <td>Max</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=gabriel%2Blouis%2Bmarie%2Bhenri&n=riverieulx%2Bde%2Bvarax&oc=0'">
+        <td style="display:none">riverieulx_de_varax</td>
+        <td style="display:none">gabriel_louis_marie_henri</td>
+        <td>Rivérieulx de Varax</td>
+        <td>Henri</td>
+        <td>accidentellement en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bmarie%2Blouis&n=riverieulx%2Bde%2Bvarax&oc=0'">
+        <td style="display:none">riverieulx_de_varax</td>
+        <td style="display:none">jean_marie_louis</td>
+        <td>Rivérieulx de Varax</td>
+        <td>Louis</td>
+        <td>disparu au combat</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Belie%2Bmartial&n=de%2Broffignac&oc=0'">
+        <td style="display:none">de_roffignac</td>
+        <td style="display:none">marie_elie_martial</td>
+        <td>Roffignac (de)</td>
+        <td>Martial</td>
+        <td>des suites de maladie contractée en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bjacques%2Bantoine%2Bmartial&n=de%2Broffignac&oc=0'">
+        <td style="display:none">de_roffignac</td>
+        <td style="display:none">marie_jacques_antoine_martial</td>
+        <td>Roffignac (de)</td>
+        <td>Martial</td>
+        <td>disparu au combat</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=charles%2Bmarie%2Bjoseph%2Bgabriel%2Bhenri%2Bjosselin&n=de%2Brohan%2Bchabot&oc=0'">
+        <td style="display:none">de_rohan_chabot</td>
+        <td style="display:none">charles_marie_joseph_gabriel_henri_josselin</td>
+        <td>Rohan-Chabot</td>
+        <td>Josselin</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=bernard%2Bmarie%2Bjean%2Bgabriel&n=rolland%2Bde%2Bchambaudoin%2Bd%2Berceville&oc=0'">
+        <td style="display:none">rolland_de_chambaudoin_d_erceville</td>
+        <td style="display:none">bernard_marie_jean_gabriel</td>
+        <td>Rolland de Chambaudouin d'Erceville</td>
+        <td>Bernard</td>
+        <td>des suites de maladie contractée en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=anselme%2Bmarie&n=rollando&oc=0'">
+        <td style="display:none">rollando</td>
+        <td style="display:none">anselme_marie</td>
+        <td>Rollando</td>
+        <td>Anselme</td>
+        <td>disparu en mer</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Badolphe%2Bantoine&n=roure&oc=0'">
+        <td style="display:none">roure</td>
+        <td style="display:none">louis_adolphe_antoine</td>
+        <td>Roure</td>
+        <td>Louis</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=christian%2Bmarie%2Blouis&n=de%2Broussel%2Bde%2Bpreville&oc=0'">
+        <td style="display:none">de_roussel_de_preville</td>
+        <td style="display:none">christian_marie_louis</td>
+        <td>Roussel de Préville (de)</td>
+        <td>Christian</td>
+        <td>des suites de maladie contractée en service</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=joseph%2Bmarie&n=segalo&oc=0'">
+        <td style="display:none">segalo</td>
+        <td style="display:none">joseph_marie</td>
+        <td>Segalo</td>
+        <td>Joseph</td>
+        <td>disparu en mer</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=gabriel%2Balbert%2Bmarie&n=de%2Bsesmaisons&oc=0'">
+        <td style="display:none">de_sesmaisons</td>
+        <td style="display:none">gabriel_albert_marie</td>
+        <td>Sesmaisons (de)</td>
+        <td>Gabriel</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=andre%2Beugene%2Bmaurice%2Brene&n=thierion%2Bde%2Bmonclin&oc=0'">
+        <td style="display:none">thierion_de_monclin</td>
+        <td style="display:none">andre_eugene_maurice_rene</td>
+        <td>Thiérion de Monclin</td>
+        <td>André</td>
+        <td>tué àl'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henri%2Blouis%2Bjules%2Bantoine&n=thierion%2Bde%2Bmonclin&oc=0'">
+        <td style="display:none">thierion_de_monclin</td>
+        <td style="display:none">henri_louis_jules_antoine</td>
+        <td>Thiérion de Monclin</td>
+        <td>Henri</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jacques%2Bmarie%2Broger&n=de%2Bvanssay&oc=0'">
+        <td style="display:none">de_vanssay</td>
+        <td style="display:none">jacques_marie_roger</td>
+        <td>Vanssay (de)</td>
+        <td>Jacques</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=maurice%2Bmarie%2Broger&n=de%2Bvanssay&oc=0'">
+        <td style="display:none">de_vanssay</td>
+        <td style="display:none">maurice_marie_roger</td>
+        <td>Vanssay (de)</td>
+        <td>Maurice</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=paul%2Bmarie%2Bmerry&n=de%2Bvanssay&oc=0'">
+        <td style="display:none">de_vanssay</td>
+        <td style="display:none">paul_marie_merry</td>
+        <td>Vanssay (de)</td>
+        <td>Paul</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=alfred%2Bmarie%2Brene&n=de%2Bvanssay&oc=0'">
+        <td style="display:none">de_vanssay</td>
+        <td style="display:none">alfred_marie_rene</td>
+        <td>Vanssay (de)</td>
+        <td>René</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=gabriel%2Bmarie%2Bjoseph&n=de%2Bvanssay%2Bde%2Bblavous&oc=0'">
+        <td style="display:none">de_vanssay_de_blavous</td>
+        <td style="display:none">gabriel_marie_joseph</td>
+        <td>Vanssay de Blavous (de)</td>
+        <td>Gabriel</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=rene%2Bmarie%2Bpaul&n=de%2Bvanssay%2Bde%2Bblavous&oc=0'">
+        <td style="display:none">de_vanssay_de_blavous</td>
+        <td style="display:none">rene_marie_paul</td>
+        <td>Vanssay de Blavous (de)</td>
+        <td>Paul</td>
+        <td>tué àl'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=alain%2Bedmond%2Blouis%2Bmarie%2Bjoseph&n=de%2Bvillele&oc=0'">
+        <td style="display:none">de_villele</td>
+        <td style="display:none">alain_edmond_louis_marie_joseph</td>
+        <td>Villèle (de)</td>
+        <td>Alain</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=guillaume%2Bmarie%2Bjoseph&n=de%2Bvillele&oc=0'">
+        <td style="display:none">de_villele</td>
+        <td style="display:none">guillaume_marie_joseph</td>
+        <td>Villèle (de)</td>
+        <td>Guillaume</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jehan%2Bmarie%2Bjoseph%2Bpierre%2Bfrancois&n=de%2Bvillele&oc=0'">
+        <td style="display:none">de_villele</td>
+        <td style="display:none">jehan_marie_joseph_pierre_francois</td>
+        <td>Villèle (de)</td>
+        <td>Jehan</td>
+        <td>disparu en combat aérien</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=yves%2Bmarie%2Bjoseph%2Balain&n=de%2Bvillele&oc=0'">
+        <td style="display:none">de_villele</td>
+        <td style="display:none">yves_marie_joseph_alain</td>
+        <td>Villèle (de)</td>
+        <td>Yves</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 14-18</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=charles&n=de%2Bvogue&oc=0'">
+        <td style="display:none">de_vogue</td>
+        <td style="display:none">charles</td>
+        <td>Vogüé (de)</td>
+        <td>Charles</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 14-18</td>
+      </tr
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=gerard%2Bmarie%2Bjean&n=d%2Baboville&oc=0'">
+        <td style="display:none">d_aboville</td>
+        <td style="display:none">gerard_marie_jean</td>
+        <td>Aboville (d')</td>
+        <td>Gérard</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=guillaume%2Bmarie%2Brene&n=d%2Baboville&oc=0'">
+        <td style="display:none">d_aboville</td>
+        <td style="display:none">guillaume_marie_rene</td>
+        <td>Aboville (d')</td>
+        <td>Guillaume</td>
+        <td>sous les bombardements</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=charles%2Belie%2Bmaurice%2Bmarie%2Bjean&n=d%2Babzac&oc=0'">
+        <td style="display:none">d_abzac</td>
+        <td style="display:none">charles_elie_maurice_marie_jean</td>
+        <td>Abzac (d')</td>
+        <td>Charles-Elie</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jacques%2Bmarie%2Bdaniel&n=amyot%2Bd%2Binville&oc=0'">
+        <td style="display:none">amyot_d_inville</td>
+        <td style="display:none">jacques_marie_daniel</td>
+        <td>Amyot d'Inville</td>
+        <td>Jacques</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bjoseph%2Brobert%2Bmaxime&n=d%2Banglejan&oc=0'">
+        <td style="display:none">d_anglejan</td>
+        <td style="display:none">marie_joseph_robert_maxime</td>
+        <td>Anglejan (d')</td>
+        <td>Robert</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=francois%2Bmarie%2Bjoseph&n=d%2Barras&oc=0'">
+        <td style="display:none">d_arras</td>
+        <td style="display:none">francois_marie_joseph</td>
+        <td>Arras (d')</td>
+        <td>François</td>
+        <td>en déportation</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henry%2Bmarie%2Bjoseph&n=d%2Barras&oc=0'">
+        <td style="display:none">d_arras</td>
+        <td style="display:none">henry_marie_joseph</td>
+        <td>Arras (d')</td>
+        <td>Henry</td>
+        <td>accidentellement en service</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bmarie%2Bmaurice&n=d%2Barras&oc=0'">
+        <td style="display:none">d_arras</td>
+        <td style="display:none">jean_marie_maurice</td>
+        <td>Arras (d')</td>
+        <td>Jean</td>
+        <td>accidentellement en service</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=joseph%2Bmarie%2Bleon%2Bjean%2Bpierre&n=baratchart&oc=0'">
+        <td style="display:none">baratchart</td>
+        <td style="display:none">joseph_marie_leon_jean_pierre</td>
+        <td>Baratchart</td>
+        <td>Pierre</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=raymond%2Bedouard%2Blouis%2Bpaul&n=barba&oc=0'">
+        <td style="display:none">barba</td>
+        <td style="display:none">raymond_edouard_louis_paul</td>
+        <td>Barba</td>
+        <td>Raymond</td>
+        <td>en captivité</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Brene%2Barmand%2Bmarie&n=de%2Bbatz%2Bde%2Bmirepoix&oc=0'">
+        <td style="display:none">de_batz_de_mirepoix</td>
+        <td style="display:none">jean_rene_armand_marie</td>
+        <td>Batz de Mirepoix (de)</td>
+        <td>Jean</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=florent%2Bvictor%2Bmarie%2Bgabriel&n=de%2Bbazelaire%2Bde%2Blesseux&oc=0'">
+        <td style="display:none">de_bazelaire_de_lesseux</td>
+        <td style="display:none">florent_victor_marie_gabriel</td>
+        <td>Bazelaire de Lesseux (de)</td>
+        <td>Florent</td>
+        <td>en déportation</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bmarie%2Bjoseph&n=de%2Bbazelaire%2Bde%2Bruppierre&oc=0'">
+        <td style="display:none">de_bazelaire_de_ruppierre</td>
+        <td style="display:none">jean_marie_joseph</td>
+        <td>Bazelaire de Ruppierre (de)</td>
+        <td>Jean</td>
+        <td>accidentellement en service</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henri%2Brene%2Bmarie&n=de%2Bbelsunce&oc=0'">
+        <td style="display:none">de_belsunce</td>
+        <td style="display:none">henri_rene_marie</td>
+        <td>Belsunce (de)</td>
+        <td>Henri</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=olivier%2Bgeorges%2Bstanislas&n=du%2Bbessey%2Bde%2Bcontenson&oc=0'">
+        <td style="display:none">du_bessey_de_contenson</td>
+        <td style="display:none">olivier_georges_stanislas</td>
+        <td>Bessey de Contenson (du)</td>
+        <td>Olivier</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=charles%2Bhenri%2Bmarie&n=billaud&oc=0'">
+        <td style="display:none">billaud</td>
+        <td style="display:none">charles_henri_marie</td>
+        <td>Billaud</td>
+        <td>Charles</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=alphonse%2Bhubert%2Broger%2Bmarie&n=de%2Bblic&oc=0'">
+        <td style="display:none">de_blic</td>
+        <td style="display:none">alphonse_hubert_roger_marie</td>
+        <td>Blic (de)</td>
+        <td>Hubert</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=michel%2Bmarie%2Brene%2Beugene&n=de%2Bblic&oc=0'">
+        <td style="display:none">de_blic</td>
+        <td style="display:none">michel_marie_rene_eugene</td>
+        <td>Blic (de)</td>
+        <td>Michel</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=bernard%2Bjean%2Bmichel%2Brobert&n=de%2Bbodman&oc=0'">
+        <td style="display:none">de_bodman</td>
+        <td style="display:none">bernard_jean_michel_robert</td>
+        <td>Bodman (de)</td>
+        <td>Bernard</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=charles%2Blaurent&n=boratto&oc=0'">
+        <td style="display:none">boratto</td>
+        <td style="display:none">charles_laurent</td>
+        <td> Boratto</td>
+        <td>Charles</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bauguste%2Bgilles&n=boudoux%2Bd%2Bhautefeuille&oc=0'">
+        <td style="display:none">boudoux_d_hautefeuille</td>
+        <td style="display:none">marie_auguste_gilles</td>
+        <td>Boudoux d'Hautefeuille</td>
+        <td>Gilles</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=michel%2Bmarie%2Bpascal&n=breart%2Bde%2Bboisanger&oc=0'">
+        <td style="display:none">breart_de_boisanger</td>
+        <td style="display:none">michel_marie_pascal</td>
+        <td>Bréart de Boisanger</td>
+        <td>Michel</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bjoseph%2Bandre%2Bjean%2Bhenri&n=de%2Bbremond%2Bd%2Bars&oc=0'">
+        <td style="display:none">de_bremond_d_ars</td>
+        <td style="display:none">marie_joseph_andre_jean_henri</td>
+        <td>Brémond d'Ars (de)</td>
+        <td>Henri</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=guy%2Bgeorges%2Betienne&n=brunet&oc=0'">
+        <td style="display:none">brunet</td>
+        <td style="display:none">guy_georges_etienne</td>
+        <td>Brunet</td>
+        <td>Guy</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henri%2Bmarie%2Bjacques&n=budan%2Bde%2Brusse&oc=0'">
+        <td style="display:none">budan_de_russe</td>
+        <td style="display:none">henri_marie_jacques</td>
+        <td>Budan de Russé</td>
+        <td>Henri</td>
+        <td>en service aérien commandé</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=hubert%2Bmarie%2Bfelix&n=de%2Bcarpentier%2Bde%2Bjuvigny&oc=0'">
+        <td style="display:none">de_carpentier_de_juvigny</td>
+        <td style="display:none">hubert_marie_felix</td>
+        <td>Carpentier de Juvigny (de)</td>
+        <td>Hubert</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=gilles%2Bmarie%2Bjoseph%2Bgerard&n=de%2Bcharette%2Bde%2Bla%2Bcontrie&oc=0'">
+        <td style="display:none">de_charette_de_la_contrie</td>
+        <td style="display:none">gilles_marie_joseph_gerard</td>
+        <td>Charette de La Contrie (de)</td>
+        <td>Gilles</td>
+        <td>non déterminé</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bgaston%2Bmarie%2Bjoseph&n=de%2Bcharette%2Bde%2Bla%2Bcontrie&oc=0'">
+        <td style="display:none">de_charette_de_la_contrie</td>
+        <td style="display:none">jean_gaston_marie_joseph</td>
+        <td>Charette de La Contrie (de)</td>
+        <td>Jean</td>
+        <td>en déportation</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=roger&n=charron&oc=0'">
+        <td style="display:none">charron</td>
+        <td style="display:none">roger</td>
+        <td>Charron</td>
+        <td>Roger</td>
+        <td>non déterminé</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Bmarie%2Bjoseph&n=de%2Bclercq&oc=0'">
+        <td style="display:none">de_clercq</td>
+        <td style="display:none">louis_marie_joseph</td>
+        <td>Clercq (de)</td>
+        <td>Louis</td>
+        <td>exécuté</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=gerard%2Bhenri%2Bantoine%2Bpierre&n=clicquot%2Bde%2Bmentque&oc=0'">
+        <td style="display:none">clicquot_de_mentque</td>
+        <td style="display:none">gerard_henri_antoine_pierre</td>
+        <td>Clicquot de Mentque</td>
+        <td>Gérard</td>
+        <td>en combat aérien</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=joseph%2Bmarie%2Braymond&n=copin%2Bde%2Bmiribel&oc=0'">
+        <td style="display:none">copin_de_miribel</td>
+        <td style="display:none">joseph_marie_raymond</td>
+        <td>Copin de Miribel</td>
+        <td>Joseph</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=rene%2Balfred%2Bgaetan%2Braoul%2Bmarie%2Bjoseph&n=de%2Bcornulier%2Bluciniere&oc=0'">
+        <td style="display:none">de_cornulier_luciniere</td>
+        <td style="display:none">rene_alfred_gaetan_raoul_marie_joseph</td>
+        <td>Cornulier-Lucinière (de)</td>
+        <td>René</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bfrancois%2Bconstantin&n=de%2Bcrevoisier%2Bde%2Bvomecourt&oc=0'">
+        <td style="display:none">de_crevoisier_de_vomecourt</td>
+        <td style="display:none">jean_francois_constantin</td>
+        <td>Crevoisier de Vomécourt (de)</td>
+        <td>Jean</td>
+        <td>en déportation</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henri%2Bcharles%2Bjoseph%2Bmarie&n=de%2Bcugnac&oc=0'">
+        <td style="display:none">de_cugnac</td>
+        <td style="display:none">henri_charles_joseph_marie</td>
+        <td>Cugnac (de)</td>
+        <td>Henri</td>
+        <td>en déportation</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=elie%2Bmichel%2Bmarie%2Barmand&n=de%2Bdampierre&oc=0'">
+        <td style="display:none">de_dampierre</td>
+        <td style="display:none">elie_michel_marie_armand</td>
+        <td>Dampierre (de)</td>
+        <td>Armand</td>
+        <td>en déportation</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=audouin%2Bmarie%2Bantoine&n=de%2Bdampierre&oc=0'">
+        <td style="display:none">de_dampierre</td>
+        <td style="display:none">audouin_marie_antoine</td>
+        <td>Dampierre (de)</td>
+        <td>Audouin</td>
+        <td>accidentellement en service</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=francois%2Bmarie%2Bjoseph&n=daru&oc=0'">
+        <td style="display:none">daru</td>
+        <td style="display:none">francois_marie_joseph</td>
+        <td>Daru</td>
+        <td>François</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=charles%2Bauguste%2Bmarie&n=david%2Bde%2Bdrezigue&oc=0'">
+        <td style="display:none">david_de_drezigue</td>
+        <td style="display:none">charles_auguste_marie</td>
+        <td>David de Drézigué</td>
+        <td>Charles</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=martial%2Bbernard%2Brene&n=delpit&oc=0'">
+        <td style="display:none">delpit</td>
+        <td style="display:none">martial_bernard_rene</td>
+        <td>Delpit</td>
+        <td>Bernard</td>
+        <td>en captivité</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=michel%2Bmarie%2Bdonatien&n=dufilhol&oc=0'">
+        <td style="display:none">dufilhol</td>
+        <td style="display:none">michel_marie_donatien</td>
+        <td>Dufilhol</td>
+        <td>Michel</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=philippe%2Blouis%2Bmarie&n=d%2Belbee&oc=0'">
+        <td style="display:none">d_elbee</td>
+        <td style="display:none">philippe_louis_marie</td>
+        <td>Elbée (d')</td>
+        <td>Philippe</td>
+        <td>en déportation</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=pierre%2Bfrancois%2Bregis%2Bmarie&n=d%2Belbee&oc=0'">
+        <td style="display:none">d_elbee</td>
+        <td style="display:none">pierre_francois_regis_marie</td>
+        <td>Elbée (d')</td>
+        <td>Pierre</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=emile%2Bbernard%2Bfrancois%2Bjoseph%2Bmarie&n=de%2Bfrancqueville&oc=0'">
+        <td style="display:none">de_francqueville</td>
+        <td style="display:none">emile_bernard_francois_joseph_marie</td>
+        <td>Francqueville (de)</td>
+        <td>Bernard</td>
+        <td>en déportation</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=bernard%2Bmarie%2Bjoseph%2Bandre&n=de%2Bgerault%2Bde%2Blangalerie&oc=0'">
+        <td style="display:none">de_gerault_de_langalerie</td>
+        <td style="display:none">bernard_marie_joseph_andre</td>
+        <td>Gérault de Langalerie(de)</td>
+        <td>Bernard</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=raoul%2Bhenri%2Bjoseph%2Bmarie&n=de%2Bghaisne%2Bde%2Bbourmont&oc=0'">
+        <td style="display:none">de_ghaisne_de_bourmont</td>
+        <td style="display:none">raoul_henri_joseph_marie</td>
+        <td>Ghaisne de Bourmont (de)</td>
+        <td>Raoul</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=robert&n=l%2Bhotte&oc=0'">
+        <td style="display:none">l_hotte</td>
+        <td style="display:none">robert</td>
+        <td>Hotte (L')</td>
+        <td>Robert</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=stanislas%2Bmarie%2Bolivier%2Balfred&n=hubert&oc=0'">
+        <td style="display:none">hubert</td>
+        <td style="display:none">stanislas_marie_olivier_alfred</td>
+        <td>Hubert</td>
+        <td>Stanislas</td>
+        <td>non déterminé</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=alain%2Bbertrand%2Bmarie%2Bgaston&n=d%2Bhumieres&oc=0'">
+        <td style="display:none">d_humieres</td>
+        <td style="display:none">alain_bertrand_marie_gaston</td>
+        <td>Humières (d')</td>
+        <td>Alain</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Braoul%2Balfred%2Bbertrand&n=le%2Bboucher%2Bd%2Bherouville&oc=0'">
+        <td style="display:none">le_boucher_d_herouville</td>
+        <td style="display:none">marie_raoul_alfred_bertrand</td>
+        <td>Le Boucher d'Hérouville </td>
+        <td>Bertrand</td>
+        <td>en déportation</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=bernard%2Bmarie%2Brene%2Beugene&n=de%2Bla%2Bgorgue%2Bde%2Brosny&oc=0'">
+        <td style="display:none">de_la_gorgue_de_rosny</td>
+        <td style="display:none">bernard_marie_rene_eugene</td>
+        <td>La Gorgue de Rosny (de)</td>
+        <td>Bernard</td>
+        <td>accidentellement en service</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=pierre%2Bmarie%2Brobert%2Bantoine&n=de%2Bla%2Bgorgue%2Bde%2Brosny&oc=0'">
+        <td style="display:none">de_la_gorgue_de_rosny</td>
+        <td style="display:none">pierre_marie_robert_antoine</td>
+        <td>La Gorgue de Rosny (de)</td>
+        <td>Pierre</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=claude%2Bpascal%2Badrien&n=de%2Blaguiche&oc=0'">
+        <td style="display:none">de_laguiche</td>
+        <td style="display:none">claude_pascal_adrien</td>
+        <td>Laguiche (de)</td>
+        <td>Claude</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bmarie%2Bphilibert%2Bvicturnien&n=de%2Blaguiche&oc=0'">
+        <td style="display:none">de_laguiche</td>
+        <td style="display:none">jean_marie_philibert_victurnien</td>
+        <td>Laguiche (de)</td>
+        <td>Jean</td>
+        <td>en déportation</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jacques%2Bmarie%2Bgaston&n=de%2Blaparre%2Bde%2Bsaint%2Bsernin&oc=0'">
+        <td style="display:none">de_laparre_de_saint_sernin</td>
+        <td style="display:none">jacques_marie_gaston</td>
+        <td>Laparre de Saint-Sernin (de)</td>
+        <td>Jacques</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Bfrederic&n=de%2Blaparre%2Bde%2Bsaint%2Bsernin&oc=0'">
+        <td style="display:none">de_laparre_de_saint_sernin</td>
+        <td style="display:none">louis_frederic</td>
+        <td>Laparre de Saint-Sernin (de)</td>
+        <td>Louis</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=amalric%2Bphilibert%2Bemmanuel&n=lombard%2Bde%2Bbuffieres%2Bde%2Brambuteau&oc=0'">
+        <td style="display:none">lombard_de_buffieres_de_rambuteau</td>
+        <td style="display:none">amalric_philibert_emmanuel</td>
+        <td>Lombard de Buffières de Rambuteau</td>
+        <td>Amalric</td>
+        <td>en déportation</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=michel%2Bmarc%2Bfrancois%2Bmarie&n=malcor&oc=0'">
+        <td style="display:none">malcor</td>
+        <td style="display:none">michel_marc_francois_marie</td>
+        <td>Malcor</td>
+        <td>Michel</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=francois%2Bmarie%2Bgerard&n=malcor%2Bdeydier%2Bde%2Bpierrefeu&oc=0'">
+        <td style="display:none">malcor_deydier_de_pierrefeu</td>
+        <td style="display:none">francois_marie_gerard</td>
+        <td>Malcor Deydier de Pierrefeu</td>
+        <td>François</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=joachim%2Blouis%2Bnapoleon&n=murat&oc=0'">
+        <td style="display:none">murat</td>
+        <td style="display:none">joachim_louis_napoleon</td>
+        <td>Murat</td>
+        <td>Joachim</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=robert%2Bjean%2Bmarie&n=de%2Bneucheze&oc=0'">
+        <td style="display:none">de_neucheze</td>
+        <td style="display:none">robert_jean_marie</td>
+        <td>Neuchèze (de)</td>
+        <td>Robert</td>
+        <td>non déterminé</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henri%2Bjoseph%2Bmarie%2Blouis%2Barthur&n=panon%2Bdesbassayns%2Bde%2Brichemont&oc=0'">
+        <td style="display:none">panon_desbassayns_de_richemont</td>
+        <td style="display:none">henri_joseph_marie_louis_arthur</td>
+        <td>Panon Desbassayns de Richemont</td>
+        <td>Henri</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marguerite%2Baglae%2Balexandrine&n=payen%2Bde%2Bla%2Bgaranderie&oc=0'">
+        <td style="display:none">payen_de_la_garanderie</td>
+        <td style="display:none">marguerite_aglae_alexandrine</td>
+        <td>Payen de La Garanderie</td>
+        <td>Marguerite</td>
+        <td>tuée par fait de guerre</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=roland%2Beugene%2Bgustave%2Bmarie%2Bjoseph&n=payen%2Bde%2Bla%2Bgaranderie&oc=0'">
+        <td style="display:none">payen_de_la_garanderie</td>
+        <td style="display:none">roland_eugene_gustave_marie_joseph</td>
+        <td>Payen de La Garanderie</td>
+        <td>Roland</td>
+        <td>non déterminé</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=francois%2Bgermain%2Bgeorges%2Bmarie&n=de%2Bpenfentenyo%2Bde%2Bkervereguin&oc=0'">
+        <td style="display:none">de_penfentenyo_de_kervereguin</td>
+        <td style="display:none">francois_germain_georges_marie</td>
+        <td>Penfentenyo de Kervéréguin (de)</td>
+        <td>Jehan</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=tanguy%2Bgeorges%2Bpierre%2Bmarie&n=de%2Bpenfentenyo%2Bde%2Bkervereguin&oc=0'">
+        <td style="display:none">de_penfentenyo_de_kervereguin</td>
+        <td style="display:none">tanguy_georges_pierre_marie</td>
+        <td>Penfentenyo de Kervéréguin (de)</td>
+        <td>Tanguy</td>
+        <td>tué en service aérien commandé</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bjules%2Bmarie%2Bcesar&n=du%2Bplessis%2Bde%2Bgrenedan&oc=0'">
+        <td style="display:none">du_plessis_de_grenedan</td>
+        <td style="display:none">jean_jules_marie_cesar</td>
+        <td>Plessis de Grenédan</td>
+        <td>Jean</td>
+        <td>en déportation</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=michel%2Bandre&n=pichot%2Bduclos&oc=0'">
+        <td style="display:none">pichot_duclos</td>
+        <td style="display:none">michel_andre</td>
+        <td>Pichot-Duclos</td>
+        <td>Michel</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=francois%2Bcharles%2Bmichel%2Bmarie%2Bandre&n=poniatowski&oc=0'">
+        <td style="display:none">poniatowski</td>
+        <td style="display:none">francois_charles_michel_marie_andre</td>
+        <td>Poniatowski</td>
+        <td>Marie-André</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jacques%2Baime%2Blouis%2Bcharles&n=de%2Breboul&oc=0'">
+        <td style="display:none">de_reboul</td>
+        <td style="display:none">jacques_aime_louis_charles</td>
+        <td>Reboul (de)</td>
+        <td>Jacques</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henry%2Bmarie%2Balain%2Barthur&n=de%2Brohan%2Bchabot&oc=0'">
+        <td style="display:none">de_rohan_chabot</td>
+        <td style="display:none">henry_marie_alain_arthur</td>
+        <td>Rohan-Chabot (de)</td>
+        <td>Henry</td>
+        <td>en combat aérien</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=xavier%2Bmarie%2Blouis&n=de%2Broussel%2Bde%2Bpreville&oc=0'">
+        <td style="display:none">de_roussel_de_preville</td>
+        <td style="display:none">xavier_marie_louis</td>
+        <td>Roussel de Préville (de)</td>
+        <td>Xavier</td>
+        <td>des suites de maladie contractée en service</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=francois%2Bmarie%2Bjoseph%2Babel%2Bhenri&n=sauvage%2Bde%2Bbrantes&oc=0'">
+        <td style="display:none">sauvage_de_brantes</td>
+        <td style="display:none">francois_marie_joseph_abel_henri</td>
+        <td>Sauvage de Brantes</td>
+        <td>François</td>
+        <td>en déportation</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Bmarie%2Bgeorges&n=scherer&oc=0'">
+        <td style="display:none">scherer</td>
+        <td style="display:none">louis_marie_georges</td>
+        <td>Scherer</td>
+        <td>Louis</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=paul%2Bjoseph%2Bmarie%2Bjules&n=de%2Bseze&oc=0'">
+        <td style="display:none">de_seze</td>
+        <td style="display:none">paul_joseph_marie_jules</td>
+        <td>Sèze (de)</td>
+        <td>Paul</td>
+        <td>par fait de guerre</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=pierre%2Bjoseph%2Bmarie&n=de%2Bseze&oc=0'">
+        <td style="display:none">de_seze</td>
+        <td style="display:none">pierre_joseph_marie</td>
+        <td>Sèze (de)</td>
+        <td>Pierre</td>
+        <td>non déterminé</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=charles%2Bmarie%2Bantoine&n=de%2Bsuyrot&oc=0'">
+        <td style="display:none">de_suyrot</td>
+        <td style="display:none">charles_marie_antoine</td>
+        <td>Suyrot (de)</td>
+        <td>Charles</td>
+        <td>non déterminé</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=francois%2Bmarie%2Bmaurice%2Brobert&n=touchard&oc=0'">
+        <td style="display:none">touchard</td>
+        <td style="display:none">francois_marie_maurice_robert</td>
+        <td>Touchard</td>
+        <td>François</td>
+        <td>des suites de blessures</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jacques%2Bantonin%2Bgeorges&n=tyrel%2Bde%2Bpoix&oc=2'">
+        <td style="display:none">tyrel_de_poix</td>
+        <td style="display:none">jacques_antonin_georges</td>
+        <td>Tyrel de Poix</td>
+        <td>Jacques</td>
+        <td>des suites de sa déportation</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=paul%2Bmarie%2Bexpedit%2Bedgar&n=de%2Bvanssay&oc=0'">
+        <td style="display:none">de_vanssay</td>
+        <td style="display:none">paul_marie_expedit_edgar</td>
+        <td>Vanssay (de)</td>
+        <td>Paul</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=robert%2Bachille%2Bgabriel&n=de%2Bvanssay&oc=0'">
+        <td style="display:none">de_vanssay</td>
+        <td style="display:none">robert_achille_gabriel</td>
+        <td>Vanssay (de)</td>
+        <td>Robert</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=maurice%2Bmarie%2Bjoseph&n=de%2Bvanssay%2Bde%2Bblavous&oc=0'">
+        <td style="display:none">de_vanssay_de_blavous</td>
+        <td style="display:none">maurice_marie_joseph</td>
+        <td>Vanssay de Blavous (de)</td>
+        <td>Maurice</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=raoul%2Bmarie%2Bjean%2Bgeorges&n=villetard%2Bde%2Blaguerie&oc=0'">
+        <td style="display:none">villetard_de_laguerie</td>
+        <td style="display:none">raoul_marie_jean_georges</td>
+        <td>Villetard de Laguérie</td>
+        <td>Raoul</td>
+        <td>, en déportation</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=marie%2Bemmanuel%2Bgeorges%2Bmichel%2Blouis&n=villeroy%2Bde%2Bgalhau&oc=0'">
+        <td style="display:none">villeroy_de_galhau</td>
+        <td style="display:none">marie_emmanuel_georges_michel_louis</td>
+        <td>Villeroy de Galhau</td>
+        <td>Louis</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=joseph%2Bmarie%2Bantoine&n=de%2Bvilloutreys%2Bde%2Bbrignac&oc=0'">
+        <td style="display:none">de_villoutreys_de_brignac</td>
+        <td style="display:none">joseph_marie_antoine</td>
+        <td>Villoutreys de Brignac (de)</td>
+        <td>Joseph</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=charles%2Blouis%2Barthur%2Bjean%2Bange%2Bmelchior&n=de%2Bvogue&oc=0'">
+        <td style="display:none">de_vogue</td>
+        <td style="display:none">charles_louis_arthur_jean_ange_melchior</td>
+        <td>Vogüé (de)</td>
+        <td>Charles</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre 39-45</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=francois%2Bmarie%2Bcharles&n=du%2Bcauze%2Bde%2Bnazelle&oc=0'">
+        <td style="display:none">du_cauze_de_nazelle</td>
+        <td style="display:none">francois_marie_charles</td>
+        <td>Cauzé de Nazelle (du)</td>
+        <td>François</td>
+        <td>non déterminé</td>
+        <td>Guerre du Maroc</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=felix%2Bcharles%2Bpaul%2Bjacques&n=de%2Bcrousnilhon&oc=0'">
+        <td style="display:none">de_crousnilhon</td>
+        <td style="display:none">felix_charles_paul_jacques</td>
+        <td>Crousnilhon (de)</td>
+        <td>Jacques</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre du Maroc</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=francois%2Bgaston%2Bmarie&n=ogier%2Bde%2Bbaulny&oc=0'">
+        <td style="display:none">ogier_de_baulny</td>
+        <td style="display:none">francois_gaston_marie</td>
+        <td>Ogier de Baulny</td>
+        <td>François</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre du Maroc</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=aurelien%2Broger%2Bmarie&n=de%2Bseze&oc=0'">
+        <td style="display:none">de_seze</td>
+        <td style="display:none">aurelien_roger_marie</td>
+        <td>Sèze (de)</td>
+        <td>Aurélien</td>
+        <td>des suites de blessures</td>
+        <td>Guerre du Maroc</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=alain%2Bmarie%2Braoul&n=d%2Baboville&oc=0'">
+        <td style="display:none">d_aboville</td>
+        <td style="display:none">alain_marie_raoul</td>
+        <td>Aboville (d')</td>
+        <td>Alain</td>
+        <td>des suites de maladie contractée en service</td>
+        <td>Guerre d'Indochine</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=bertrand%2Bbernard%2Bmarie&n=d%2Barras&oc=0'">
+        <td style="display:none">d_arras</td>
+        <td style="display:none">bertrand_bernard_marie</td>
+        <td>Arras (d')</td>
+        <td>Bertrand</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre d'Indochine</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=antoine%2Bmarie%2Bjoseph&n=bernard%2Bde%2Blavernette&oc=0'">
+        <td style="display:none">bernard_de_lavernette</td>
+        <td style="display:none">antoine_marie_joseph</td>
+        <td>Bernard de Lavernette</td>
+        <td>Antoine</td>
+        <td>des suites de blessures</td>
+        <td>Guerre d'Indochine</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=yves&n=de%2Bblic&oc=1'">
+        <td style="display:none">de_blic</td>
+        <td style="display:none">yves</td>
+        <td>Blic (de)</td>
+        <td>Yves</td>
+        <td>non déterminé</td>
+        <td>Guerre d'Indochine</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=edouard%2Bcharles&n=de%2Bcointet%2Bde%2Bfillain&oc=0'">
+        <td style="display:none">de_cointet_de_fillain</td>
+        <td style="display:none">edouard_charles</td>
+        <td>Cointet de Fillain (de)</td>
+        <td>Edouard</td>
+        <td>en captivité</td>
+        <td>Guerre d'Indochine</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=guy%2Bjoseph%2Bmarie&n=copin%2Bde%2Bmiribel&oc=0'">
+        <td style="display:none">copin_de_miribel</td>
+        <td style="display:none">guy_joseph_marie</td>
+        <td>Copin de Miribel</td>
+        <td>Guy</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre d'Indochine</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=pierre%2Bnoel%2Blouis%2Bmarie%2Bmaurice&n=de%2Bcornulier%2Bluciniere&oc=0'">
+        <td style="display:none">de_cornulier_luciniere</td>
+        <td style="display:none">pierre_noel_louis_marie_maurice</td>
+        <td>Cornulier-Lucinière (de)</td>
+        <td>Pierre-Noël</td>
+        <td>en captivité</td>
+        <td>Guerre d'Indochine</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=hubert%2Bmarie%2Bpaul&n=de%2Bfreslon%2Bde%2Bla%2Bfreslonniere&oc=0'">
+        <td style="display:none">de_freslon_de_la_freslonniere</td>
+        <td style="display:none">hubert_marie_paul</td>
+        <td>Freslon de La Freslonnière (de)</td>
+        <td>Hubert</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre d'Indochine</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=louis%2Bjoseph%2Bclair&n=houel&oc=0'">
+        <td style="display:none">houel</td>
+        <td style="display:none">louis_joseph_clair</td>
+        <td>Houël</td>
+        <td>Louis</td>
+        <td>en service aérien commandé</td>
+        <td>Guerre d'Indochine</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=rene%2Banne%2Bmarie%2Bjoseph&n=de%2Bla%2Blande%2Bde%2Bcalan&oc=0'">
+        <td style="display:none">de_la_lande_de_calan</td>
+        <td style="display:none">rene_anne_marie_joseph</td>
+        <td>La Lande de Calan (de)</td>
+        <td>René</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre d'Indochine</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=roger%2Bmarie%2Bxavier&n=de%2Blarminat&oc=0'">
+        <td style="display:none">de_larminat</td>
+        <td style="display:none">roger_marie_xavier</td>
+        <td>Larminat (de)</td>
+        <td>Roger</td>
+        <td>tué en opération</td>
+        <td>Guerre d'Indochine</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jacques%2Bgaston%2Bmarie&n=ogier%2Bde%2Bbaulny&oc=0'">
+        <td style="display:none">ogier_de_baulny</td>
+        <td style="display:none">jacques_gaston_marie</td>
+        <td>Ogier de Baulny</td>
+        <td>Jacques</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre d'Indochine</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=olivier%2Bmarie%2Beugene&n=de%2Bparscau%2Bdu%2Bplessix&oc=0'">
+        <td style="display:none">de_parscau_du_plessix</td>
+        <td style="display:none">olivier_marie_eugene</td>
+        <td>Parscau du Plessix (de)</td>
+        <td>Olivier</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre d'Indochine</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=pierre%2Bherve%2Bphilippe%2Bmarie%2Bjoseph&n=de%2Bparscau%2Bdu%2Bplessix&oc=0'">
+        <td style="display:none">de_parscau_du_plessix</td>
+        <td style="display:none">pierre_herve_philippe_marie_joseph</td>
+        <td>Parscau du Plessix (de)</td>
+        <td>Pierre</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre d'Indochine</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=alain%2Bhenri%2Bgeorges%2Bmarie&n=de%2Bpenfentenyo%2Bde%2Bkervereguin&oc=0'">
+        <td style="display:none">de_penfentenyo_de_kervereguin</td>
+        <td style="display:none">alain_henri_georges_marie</td>
+        <td>Penfentenyo de Kervéréguin (de)</td>
+        <td>Alain</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre d'Indochine</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jean%2Bleon%2Bmarie%2Brogatien&n=de%2Bsesmaisons&oc=0'">
+        <td style="display:none">de_sesmaisons</td>
+        <td style="display:none">jean_leon_marie_rogatien</td>
+        <td>Sesmaisons (de)</td>
+        <td>Jean</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre d'Indochine</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=xavier%2Bmarie%2Bjacques&n=d%2Banselme&oc=0'">
+        <td style="display:none">d_anselme</td>
+        <td style="display:none">xavier_marie_jacques</td>
+        <td>Anselme (d')</td>
+        <td>Xavier</td>
+        <td>des suite de blessures</td>
+        <td>Guerre d'Algérie</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=gilbert%2Bmarie%2Bfelix%2Bamable%2Bbernard&n=arnoux%2Bde%2Bmaison%2Brouge&oc=0'">
+        <td style="display:none">arnoux_de_maison_rouge</td>
+        <td style="display:none">gilbert_marie_felix_amable_bernard</td>
+        <td>Arnoux de Maison Rouge</td>
+        <td>Gilbert</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre d'Algérie</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=pierre%2Bmarie%2Bjoseph&n=de%2Bbazelaire%2Bde%2Blesseux&oc=0'">
+        <td style="display:none">de_bazelaire_de_lesseux</td>
+        <td style="display:none">pierre_marie_joseph</td>
+        <td>Bazelaire de Lesseux (de)</td>
+        <td>Pierre</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre d'Algérie</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=xavier%2Bmarie%2Bjoseph%2Bamable&n=de%2Bcacqueray%2Bvalmenier&oc=0'">
+        <td style="display:none">de_cacqueray_valmenier</td>
+        <td style="display:none">xavier_marie_joseph_amable</td>
+        <td>Cacqueray-Valménier (de)</td>
+        <td>Xavier</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre d'Algérie</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=jacques%2Bmarie%2Bjoseph%2Bgerard%2Bmaurice&n=de%2Bcharette%2Bde%2Bla%2Bcontrie&oc=0'">
+        <td style="display:none">de_charette_de_la_contrie</td>
+        <td style="display:none">jacques_marie_joseph_gerard_maurice</td>
+        <td>Charette de La Contrie (de)</td>
+        <td>Jacques</td>
+        <td>non déterminé</td>
+        <td>Guerre d'Algérie</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=gerald%2Baudouin&n=de%2Bdampierre&oc=0'">
+        <td style="display:none">de_dampierre</td>
+        <td style="display:none">gerald_audouin</td>
+        <td>Dampierre (de)</td>
+        <td>Gérald</td>
+        <td>non déterminé</td>
+        <td>Guerre d'Algérie</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=francois%2Bjean%2Bantonin%2Bmarie%2Bamedee&n=gonzalez%2Bde%2Blinares&oc=0'">
+        <td style="display:none">gonzalez_de_linares</td>
+        <td style="display:none">francois_jean_antonin_marie_amedee</td>
+        <td>Gonzales de Linares</td>
+        <td>François</td>
+        <td>non déterminé</td>
+        <td>Guerre d'Algérie</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=bernard%2Bauguste%2Bfrancois%2Bmarie&n=de%2Bhauteclocque&oc=0'">
+        <td style="display:none">de_hauteclocque</td>
+        <td style="display:none">bernard_auguste_francois_marie</td>
+        <td>Hauteclocque (de)</td>
+        <td>Bernard</td>
+        <td>non déterminé</td>
+        <td>Guerre d'Algérie</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=alain%2Bpaul%2Bandre%2Bmaurice&n=jehenne&oc=0'">
+        <td style="display:none">jehenne</td>
+        <td style="display:none">alain_paul_andre_maurice</td>
+        <td>Jehenne</td>
+        <td>Alain</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre d'Algérie</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=henri%2Bludovic%2Bmarie&n=jouvet%2Bdes%2Bmarands&oc=0'">
+        <td style="display:none">jouvet_des_marands</td>
+        <td style="display:none">henri_ludovic_marie</td>
+        <td>Jouvet des Marants</td>
+        <td>Henri</td>
+        <td>non déterminé</td>
+        <td>Guerre d'Algérie</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=francois%2Bgaston%2Bmichel%2Bmarie&n=d%2Borleans&oc=0'">
+        <td style="display:none">d_orleans</td>
+        <td style="display:none">francois_gaston_michel_marie</td>
+        <td>Orléans (d')</td>
+        <td>François</td>
+        <td>tué à l'ennemi</td>
+        <td>Guerre d'Algérie</td>
+      </tr>
+      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=bertrand%2Bmarie%2Bjoseph%2Bcharles&n=du%2Bplessis%2Bd%2Bargentre&oc=0'">
+        <td style="display:none">du_plessis_d_argentre</td>
+        <td style="display:none">bertrand_marie_joseph_charles</td>
+        <td>Plessis d'Argentré (du)</td>
+        <td>Bertrand</td>
+        <td>non déterminé</td>
+        <td>Guerre d'Algérie</td>
+      </tr>
+
+    </tbody>
+  </table>
+<div id="tooltip" class="tooltip"></div>
+</div>
+</body>
+<script>
+window.addEventListener("load", () => {
+  // 1. Créer un bouton temporaire pour récupérer le style focus
+  const probe = document.createElement("button");
+  probe.textContent = ".";
+  probe.style.position = "absolute";
+  probe.style.opacity = "0";
+  probe.style.pointerEvents = "none";
+  probe.style.height = "0";
+  probe.style.overflow = "hidden";
+  document.body.appendChild(probe);
+
+  // Mémoriser le scroll
+  const scrollY = window.scrollY;
+  probe.focus();
+  window.scrollTo(0, scrollY);
+
+  // Appliquer après délai
+  setTimeout(() => {
+    const computed = getComputedStyle(probe);
+    const outlineStyle = computed.outlineStyle;
+    const outlineColor = computed.outlineColor;
+    const outlineOffset = computed.outlineOffset;
+
+    // Créer la règle CSS
+    const style = document.createElement("style");
+    style.textContent = `
+    /*=====================================
+           copie du focus natif 
+    =====================================*/
+      tr[tabindex]:hover {
+        outline-style: ${outlineStyle};
+        outline-color: ${outlineColor};
+        outline-offset: ${outlineOffset};
+        background-color: white;
+        border-color: transparent;
+        transform: scale(1.003);
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Retirer le bouton
+    document.body.removeChild(probe);
+  }, 10);
+
+  // 2. Script de recherche
+  const input = document.getElementById('searchInput');
+  const tbody = document.getElementById('tableMorts').getElementsByTagName('tbody')[0];
+
+  input.addEventListener('input', function() {
+    const filter = this.value.toLowerCase();
+    for (let row of tbody.rows) {
+      const nom = row.cells[0].textContent.toLowerCase();
+      if (nom.includes(filter)) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    }
+  });
+});
+</script>
+</body>
+</html>
