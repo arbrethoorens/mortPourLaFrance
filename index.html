@@ -18,7 +18,7 @@
       --toolTipFontSize: 0.9em;
       --transition: 0.3s ease;
       --transformScale: scale(1.006);
-      --responsiveFirstColumnWidth: 55;
+      --responsiveFirstColumnWidth: 50;
       --responsiveScondColumnWidth: calc(100 - var(--responsiveFirstColumnWidth));
     }
     *,
@@ -67,6 +67,7 @@
       outline:2px solid #000;
       background-color: white;
       border-color: transparent;
+      border-radius: var(--radius);
       transform: scale(1.003);
     }      
     tr[tabindex]:hover td,
@@ -101,7 +102,7 @@
     tr[tabindex]:hover,
     tr[tabindex]:focus{
       display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
+      grid-template-columns: 1fr 1fr;
       width: calc(1% * (10000 / var(--responsiveFirstColumnWidth)));
     }
     tr[tabindex]:hover td,
