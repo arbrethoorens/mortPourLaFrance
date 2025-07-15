@@ -61,11 +61,14 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-    }
-    tr[tabindex]:hover td,
-    tr[tabindex]:focus td  {
-      border: 0px solid transparent;
-    }
+    }      
+    tr[tabindex]:hover,
+    tr[tabindex]:focus {
+      outline:1px solid #000;
+      background-color: white;
+      border-color: transparent;
+      transform: scale(1.003);
+      }
     th:nth-child(3) {
       width: 43%;
     }
@@ -2845,49 +2848,6 @@
 </div>
 </body>
 <script>
-window.addEventListener("load", () => {
-  // 1. Créer un bouton temporaire pour récupérer le style focus
-  const probe = document.createElement("button");
-  probe.textContent = ".";
-  probe.style.position = "absolute";
-  probe.style.opacity = "0";
-  probe.style.pointerEvents = "none";
-  probe.style.height = "0";
-  probe.style.overflow = "hidden";
-  document.body.appendChild(probe);
-
-  // Mémoriser le scroll
-  const scrollY = window.scrollY;
-  probe.focus();
-  window.scrollTo(0, scrollY);
-
-  // Appliquer après délai
-  setTimeout(() => {
-    const computed = getComputedStyle(probe);
-    const outlineStyle = computed.outlineStyle;
-    const outlineColor = computed.outlineColor;
-    const outlineOffset = computed.outlineOffset;
-
-    // Créer la règle CSS
-    const style = document.createElement("style");
-    style.textContent = `
-    /*=====================================
-           copie du focus natif 
-    =====================================*/
-      tr[tabindex]:hover {
-        outline-style: ${outlineStyle};
-        outline-color: ${outlineColor};
-        outline-offset: ${outlineOffset};
-        background-color: white;
-        border-color: transparent;
-        transform: scale(1.003);
-      }
-    `;
-    document.head.appendChild(style);
-
-    // Retirer le bouton
-    document.body.removeChild(probe);
-  }, 10);
 
   // 2. Script de recherche
   const input = document.getElementById('searchInput');
