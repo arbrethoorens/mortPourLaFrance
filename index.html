@@ -142,7 +142,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr tabindex="0" role="link" onclick="window.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=gabriel%2Bange%2Bmarie%2Bjoseph%2Banne&n=d%2Baboville&oc=0'">
+      <tr tabindex="0" role="link" onclick="window.top.location='https://gw.geneanet.org/mightydespe_w?lang=fr&p=gabriel%2Bange%2Bmarie%2Bjoseph%2Banne&n=d%2Baboville&oc=0'">
         <td style="display:none">d_aboville</td>
         <td style="display:none">gabriel_ange_marie_joseph_anne</td>
         <td>Aboville (d')</td>
@@ -2905,12 +2905,6 @@ window.addEventListener("load", () => {
     }
   });
 });
-	document.addEventListener("DOMContentLoaded", function() {
-		var rows = document.querySelectorAll("tr");
-		rows.forEach(function(row) {
-			row.setAttribute("target", "_top");
-		});
-	};
 </script>
 </body>
 </html>
