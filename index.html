@@ -18,8 +18,8 @@
       --toolTipFontSize: 0.9em;
       --transition: 0.3s ease;
       --transformScale: scale(1.006);
-	    --responsiveFirstColumnWidth: 50;
-			--responsiveScondColumnWidth: calc(100 - var(--responsiveFirstColumnWidth));
+      --responsiveFirstColumnWidth: 50;
+      --responsiveScondColumnWidth: calc(100 - var(--responsiveFirstColumnWidth));
     }
     *,
     *::before,
@@ -2905,6 +2905,12 @@ window.addEventListener("load", () => {
     }
   });
 });
+	document.addEventListener("DOMContentLoaded", function() {
+		var rows = document.querySelectorAll("tr");
+		rows.forEach(function(row) {
+			row.setAttribute("target", "_top");
+		});
+	};
 </script>
 </body>
 </html>
