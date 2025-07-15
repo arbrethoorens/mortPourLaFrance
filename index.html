@@ -64,11 +64,16 @@
     }      
     tr[tabindex]:hover,
     tr[tabindex]:focus {
-      outline:1px solid #000;
+      outline:2px solid #000;
+      offset: -1px;
       background-color: white;
       border-color: transparent;
       transform: scale(1.003);
-      }
+    }      
+    tr[tabindex]:hover td,
+    tr[tabindex]:focus td{
+      border:1px solid transparent;
+    }
     th:nth-child(3) {
       width: 43%;
     }
